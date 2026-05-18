@@ -4,9 +4,10 @@ using WinLayout.Services;
 
 namespace WinLayout;
 
-public partial class MainWindow : Window
+public partial class MainWindow : System.Windows.Window
 {
     private readonly ConfigService _configService = new();
+    private readonly WindowManager _windowManager = new();
     private HookService? _hookService;
     private OverlayService? _overlayService;
 
@@ -22,7 +23,7 @@ public partial class MainWindow : Window
         _hookService.DragEnded += OnDragEnded;
         _hookService.Start();
 
-        Title = $"WinLayout — Shift+拖拽吸附就绪";
+        Title = "WinLayout — Shift+拖拽吸附就绪";
     }
 
     private void OnDragStarted(object? sender, WindowDragEventArgs e)
@@ -39,7 +40,16 @@ public partial class MainWindow : Window
     private void OnDragEnded(object? sender, WindowDragEventArgs e)
     {
         Debug.WriteLine($"[MainWindow] DragEnded hwnd=0x{e.WindowHandle:X}");
-        _overlayService?.Hide();
+
+        if (_overlayService != null)
+        {
+            var target = _overlayService.GetSnapTarget(e.CursorX, e.CursorY);
+            if (target != null)
+            {
+                _windowManager.SnapWindow(e.WindowHandle, target);
+            }
+            _overlayService.Hide();
+        }
     }
 
     protected override void OnClosed(EventArgs e)

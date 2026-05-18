@@ -46,6 +46,31 @@ public class OverlayService
         _overlayWindow.ShowOverlay(bounds.X, bounds.Y, bounds.Width, bounds.Height, zones, highlightedIndex);
     }
 
+    public SnapTarget? GetSnapTarget(int cursorX, int cursorY)
+    {
+        var screen = GetScreenBounds(cursorX, cursorY);
+        var zones = GetActiveZones();
+        int zoneIndex = GetZoneIndexAtCursor(cursorX, cursorY, screen, zones);
+
+        if (zoneIndex < 0 || zoneIndex >= zones.Count)
+            return null;
+
+        var zone = zones[zoneIndex];
+        return new SnapTarget
+        {
+            ZoneIndex = zoneIndex,
+            ScreenX = screen.X,
+            ScreenY = screen.Y,
+            ScreenWidth = screen.Width,
+            ScreenHeight = screen.Height,
+            ZoneLeft = zone.Left,
+            ZoneTop = zone.Top,
+            ZoneWidth = zone.Width,
+            ZoneHeight = zone.Height,
+            Padding = zone.Padding
+        };
+    }
+
     public void Hide()
     {
         _overlayWindow?.HideOverlay();
