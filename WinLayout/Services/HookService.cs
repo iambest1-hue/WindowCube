@@ -33,6 +33,19 @@ public class HookService : IDisposable
     public event EventHandler<WindowDragEventArgs>? DragMoved;
     public event EventHandler<WindowDragEventArgs>? DragEnded;
 
+    public bool IsStackingKeyPressed()
+    {
+        return IsKeyDown(GetVkForModifier(_configService.LoadConfig().StackingKey));
+    }
+
+    private static int GetVkForModifier(string key) => key switch
+    {
+        "Shift" => User32.VK_SHIFT,
+        "Ctrl" => User32.VK_CONTROL,
+        "Alt" => User32.VK_MENU,
+        _ => User32.VK_CONTROL
+    };
+
     public HookService(Dispatcher dispatcher, ConfigService configService,
         WindowFilterService filterService)
     {

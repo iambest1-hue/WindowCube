@@ -26,7 +26,7 @@ public class WindowManager
 
     public SnapTarget? LastSnapTarget { get; private set; }
 
-    public void SnapWindow(IntPtr hwnd, SnapTarget target)
+    public void SnapWindow(IntPtr hwnd, SnapTarget target, bool stacking = false)
     {
         // Un-maximize first
         UnmaximizeWindow(hwnd);
@@ -39,8 +39,18 @@ public class WindowManager
         {
             if (existingHwnd != hwnd)
             {
-                // Displace the existing window
-                DisplaceWindow(existingHwnd, target);
+                if (stacking)
+                {
+                    StackWindowsInZone(hwnd, existingHwnd, target);
+                    _zoneOccupancy[key] = hwnd; // Replace with new primary
+                    LastSnapTarget = target;
+                    return;
+                }
+                else
+                {
+                    // Displace the existing window
+                    DisplaceWindow(existingHwnd, target);
+                }
             }
         }
 
@@ -60,6 +70,38 @@ public class WindowManager
         LastSnapTarget = target;
 
         Debug.WriteLine($"[WindowManager] Snapped 0x{hwnd:X} to zone {target.ZoneIndex} @ ({x},{y}) {w}x{h}");
+    }
+
+    private void StackWindowsInZone(IntPtr hwnd1, IntPtr hwnd2, SnapTarget target)
+    {
+        int zoneX = target.ScreenX + (int)(target.ZoneLeft * target.ScreenWidth) + target.Padding;
+        int zoneY = target.ScreenY + (int)(target.ZoneTop * target.ScreenHeight) + target.Padding;
+        int zoneW = (int)(target.ZoneWidth * target.ScreenWidth) - target.Padding * 2;
+        int zoneH = (int)(target.ZoneHeight * target.ScreenHeight) - target.Padding * 2;
+
+        // Split horizontally if zone is wider than tall, else vertically
+        bool horizontal = zoneW > zoneH;
+
+        if (horizontal)
+        {
+            int halfW = zoneW / 2;
+            User32.SetWindowPos(hwnd1, User32.HWND_TOP,
+                zoneX, zoneY, halfW, zoneH,
+                User32.SWP_NOZORDER | User32.SWP_NOACTIVATE | User32.SWP_SHOWWINDOW);
+            User32.SetWindowPos(hwnd2, User32.HWND_TOP,
+                zoneX + halfW, zoneY, halfW, zoneH,
+                User32.SWP_NOZORDER | User32.SWP_NOACTIVATE | User32.SWP_SHOWWINDOW);
+        }
+        else
+        {
+            int halfH = zoneH / 2;
+            User32.SetWindowPos(hwnd1, User32.HWND_TOP,
+                zoneX, zoneY, zoneW, halfH,
+                User32.SWP_NOZORDER | User32.SWP_NOACTIVATE | User32.SWP_SHOWWINDOW);
+            User32.SetWindowPos(hwnd2, User32.HWND_TOP,
+                zoneX, zoneY + halfH, zoneW, halfH,
+                User32.SWP_NOZORDER | User32.SWP_NOACTIVATE | User32.SWP_SHOWWINDOW);
+        }
     }
 
     private void DisplaceWindow(IntPtr hwnd, SnapTarget target)

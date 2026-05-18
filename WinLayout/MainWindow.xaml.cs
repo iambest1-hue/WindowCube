@@ -145,7 +145,8 @@ public partial class MainWindow : Window
             var target = _overlayService.GetSnapTarget(e.CursorX, e.CursorY);
             if (target != null)
             {
-                _windowManager.SnapWindow(e.WindowHandle, target);
+                bool stacking = _hookService?.IsStackingKeyPressed() == true;
+                _windowManager.SnapWindow(e.WindowHandle, target, stacking);
             }
             _overlayService.Hide();
         }
