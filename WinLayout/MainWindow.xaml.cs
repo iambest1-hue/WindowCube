@@ -13,6 +13,7 @@ public partial class MainWindow : Window
     private readonly WindowManager _windowManager = new();
     private HookService? _hookService;
     private OverlayService? _overlayService;
+    private TrayService? _trayService;
 
     public MainWindow()
     {
@@ -31,6 +32,16 @@ public partial class MainWindow : Window
         _hookService.DragEnded += OnDragEnded;
         _hookService.Start();
 
+        _trayService = new TrayService(this, _layoutService, _monitorService, _configService);
+        _trayService.OpenEditorRequested += (_, _) => OnOpenEditor(this, new RoutedEventArgs());
+        _trayService.PauseStateChanged += (_, paused) => OnPauseChanged(paused);
+        _trayService.LayoutSwitchRequested += (_, layoutId) => OnLayoutSwitched(layoutId);
+
+        UpdateStatus();
+    }
+
+    private void UpdateStatus()
+    {
         var layout = _layoutService.GetActiveLayout();
         StatusLabel.Text = layout != null
             ? $"当前布局: {layout.Name} — Shift+拖拽吸附就绪"
@@ -43,28 +54,58 @@ public partial class MainWindow : Window
         editor.Owner = this;
         editor.Closed += (_, _) =>
         {
-            var layout = _layoutService.GetActiveLayout();
-            StatusLabel.Text = layout != null
-                ? $"当前布局: {layout.Name} — Shift+拖拽吸附就绪"
-                : "Shift+拖拽吸附就绪";
+            _trayService?.RefreshLayoutMenuItems();
+            UpdateStatus();
         };
         editor.ShowDialog();
     }
 
+    private void OnPauseChanged(bool paused)
+    {
+        if (paused)
+        {
+            _hookService?.Dispose();
+            _overlayService?.Hide();
+        }
+        else
+        {
+            _hookService = new HookService(Dispatcher, _configService);
+            _hookService.DragStarted += OnDragStarted;
+            _hookService.DragMoved += OnDragMoved;
+            _hookService.DragEnded += OnDragEnded;
+            _hookService.Start();
+        }
+        StatusLabel.Text = paused ? "已暂停 — 拖拽吸附禁用" : "Shift+拖拽吸附就绪";
+    }
+
+    private void OnLayoutSwitched(string layoutId)
+    {
+        var layout = _layoutService.GetActiveLayout();
+        if (layout == null || _windowManager.LastSnapTarget == null) return;
+
+        var lastTarget = _windowManager.LastSnapTarget;
+        _windowManager.RearrangeAll(layout.Zones,
+            lastTarget.ScreenX, lastTarget.ScreenY,
+            lastTarget.ScreenWidth, lastTarget.ScreenHeight);
+
+        UpdateStatus();
+    }
+
     private void OnDragStarted(object? sender, WindowDragEventArgs e)
     {
-        Debug.WriteLine($"[MainWindow] DragStarted hwnd=0x{e.WindowHandle:X}");
+        if (_trayService?.IsPaused == true) return;
         _overlayService?.Show(e.CursorX, e.CursorY);
     }
 
     private void OnDragMoved(object? sender, WindowDragEventArgs e)
     {
+        if (_trayService?.IsPaused == true) return;
         _overlayService?.UpdateCursor(e.CursorX, e.CursorY);
     }
 
     private void OnDragEnded(object? sender, WindowDragEventArgs e)
     {
-        Debug.WriteLine($"[MainWindow] DragEnded hwnd=0x{e.WindowHandle:X}");
+        if (_trayService?.IsPaused == true) return;
 
         if (_overlayService != null)
         {
@@ -79,6 +120,7 @@ public partial class MainWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        _trayService?.Dispose();
         _hookService?.Dispose();
         base.OnClosed(e);
     }

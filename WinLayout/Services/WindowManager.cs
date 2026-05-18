@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using WinLayout.Models;
 using WinLayout.Native;
 
 namespace WinLayout.Services;
@@ -86,6 +87,43 @@ public class WindowManager
             User32.SWP_NOZORDER | User32.SWP_NOACTIVATE | User32.SWP_SHOWWINDOW);
 
         Debug.WriteLine($"[WindowManager] Displaced 0x{hwnd:X} to center ({cx},{cy})");
+    }
+
+    public void RearrangeAll(List<ZoneDefinition> newZones, int screenX, int screenY,
+        int screenWidth, int screenHeight)
+    {
+        if (LastSnapTarget == null) return;
+
+        var screenId = GetScreenId(LastSnapTarget);
+
+        for (int i = 0; i < newZones.Count; i++)
+        {
+            var key = (screenId, i);
+            if (_zoneOccupancy.TryGetValue(key, out var hwnd) && hwnd != IntPtr.Zero)
+            {
+                // Remove old entry and recall SnapWindow with updated zone
+                _zoneOccupancy.Remove(key);
+
+                // Check if window still exists
+                if (User32.IsWindow(hwnd))
+                {
+                    var zone = newZones[i];
+                    SnapWindow(hwnd, new SnapTarget
+                    {
+                        ZoneIndex = i,
+                        ScreenX = screenX,
+                        ScreenY = screenY,
+                        ScreenWidth = screenWidth,
+                        ScreenHeight = screenHeight,
+                        ZoneLeft = zone.Left,
+                        ZoneTop = zone.Top,
+                        ZoneWidth = zone.Width,
+                        ZoneHeight = zone.Height,
+                        Padding = zone.Padding
+                    });
+                }
+            }
+        }
     }
 
     public void RemoveWindow(IntPtr hwnd)
