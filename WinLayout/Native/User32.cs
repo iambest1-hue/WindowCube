@@ -73,6 +73,19 @@ internal static class User32
     public const int SW_RESTORE = 9;
     public const int SW_SHOWMAXIMIZED = 3;
 
+    [DllImport("user32.dll")]
+    public static extern bool EnumDisplayMonitors(IntPtr hdc, IntPtr lprcClip,
+        MonitorEnumDelegate lpfnEnum, IntPtr dwData);
+
+    [DllImport("user32.dll", CharSet = CharSet.Auto)]
+    public static extern bool EnumDisplayDevices(string? lpDevice, uint iDevNum,
+        ref DISPLAY_DEVICE lpDisplayDevice, uint dwFlags);
+
+    public delegate bool MonitorEnumDelegate(IntPtr hMonitor, IntPtr hdcMonitor,
+        ref RECT lprcMonitor, IntPtr dwData);
+
+    public const uint WM_DISPLAYCHANGE = 0x007E;
+
     [StructLayout(LayoutKind.Sequential)]
     public struct WINDOWPLACEMENT
     {
@@ -82,6 +95,21 @@ internal static class User32
         public POINT ptMinPosition;
         public POINT ptMaxPosition;
         public RECT rcNormalPosition;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+    public struct DISPLAY_DEVICE
+    {
+        public int cb;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+        public string DeviceName;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+        public string DeviceString;
+        public uint StateFlags;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+        public string DeviceID;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+        public string DeviceKey;
     }
 
     public const uint MONITOR_DEFAULTTONULL = 0;

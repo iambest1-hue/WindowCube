@@ -10,14 +10,20 @@ public class OverlayService
 {
     private OverlayWindow? _overlayWindow;
     private readonly LayoutService _layoutService;
+    private readonly MonitorService _monitorService;
+    private string _currentScreenId = "";
 
-    public OverlayService(ConfigService configService, LayoutService layoutService)
+    public OverlayService(ConfigService configService, LayoutService layoutService,
+        MonitorService monitorService)
     {
         _layoutService = layoutService;
+        _monitorService = monitorService;
     }
 
     public void Show(int cursorX, int cursorY)
     {
+        var monitor = _monitorService.GetMonitorAtCursor(cursorX, cursorY);
+        _currentScreenId = monitor?.ScreenId ?? "";
         var bounds = GetScreenBounds(cursorX, cursorY);
         var zones = GetActiveZones();
 
@@ -71,7 +77,13 @@ public class OverlayService
 
     private List<ZoneDefinition> GetActiveZones()
     {
-        var layout = _layoutService.GetActiveLayout();
+        LayoutDefinition? layout = null;
+
+        if (!string.IsNullOrEmpty(_currentScreenId))
+            layout = _monitorService.GetActiveLayoutForScreen(_currentScreenId);
+
+        layout ??= _layoutService.GetActiveLayout();
+
         if (layout != null && layout.Zones.Count > 0)
             return layout.Zones;
 

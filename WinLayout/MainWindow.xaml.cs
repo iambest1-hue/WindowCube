@@ -9,6 +9,7 @@ public partial class MainWindow : Window
 {
     private readonly ConfigService _configService = new();
     private readonly LayoutService _layoutService;
+    private readonly MonitorService _monitorService;
     private readonly WindowManager _windowManager = new();
     private HookService? _hookService;
     private OverlayService? _overlayService;
@@ -18,7 +19,11 @@ public partial class MainWindow : Window
         InitializeComponent();
 
         _layoutService = new LayoutService(_configService);
-        _overlayService = new OverlayService(_configService, _layoutService);
+        _monitorService = new MonitorService(_configService, _layoutService);
+        _overlayService = new OverlayService(_configService, _layoutService, _monitorService);
+
+        var helper = new System.Windows.Interop.WindowInteropHelper(this);
+        _monitorService.Initialize(helper.Handle);
 
         _hookService = new HookService(Dispatcher, _configService);
         _hookService.DragStarted += OnDragStarted;
