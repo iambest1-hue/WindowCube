@@ -10,6 +10,7 @@ public partial class MainWindow : Window
     private readonly ConfigService _configService = new();
     private readonly LayoutService _layoutService;
     private readonly MonitorService _monitorService;
+    private readonly WindowFilterService _filterService;
     private readonly WindowManager _windowManager = new();
     private HookService? _hookService;
     private OverlayService? _overlayService;
@@ -21,12 +22,13 @@ public partial class MainWindow : Window
 
         _layoutService = new LayoutService(_configService);
         _monitorService = new MonitorService(_configService, _layoutService);
+        _filterService = new WindowFilterService(_configService);
         _overlayService = new OverlayService(_configService, _layoutService, _monitorService);
 
         var helper = new System.Windows.Interop.WindowInteropHelper(this);
         _monitorService.Initialize(helper.Handle);
 
-        _hookService = new HookService(Dispatcher, _configService);
+        _hookService = new HookService(Dispatcher, _configService, _filterService);
         _hookService.DragStarted += OnDragStarted;
         _hookService.DragMoved += OnDragMoved;
         _hookService.DragEnded += OnDragEnded;
@@ -70,7 +72,7 @@ public partial class MainWindow : Window
         }
         else
         {
-            _hookService = new HookService(Dispatcher, _configService);
+            _hookService = new HookService(Dispatcher, _configService, _filterService);
             _hookService.DragStarted += OnDragStarted;
             _hookService.DragMoved += OnDragMoved;
             _hookService.DragEnded += OnDragEnded;

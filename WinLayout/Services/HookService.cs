@@ -19,6 +19,7 @@ public class HookService : IDisposable
 {
     private readonly Dispatcher _dispatcher;
     private readonly ConfigService _configService;
+    private readonly WindowFilterService _filterService;
     private IntPtr _hook;
     private User32.WinEventDelegate? _hookDelegate;
 
@@ -32,10 +33,12 @@ public class HookService : IDisposable
     public event EventHandler<WindowDragEventArgs>? DragMoved;
     public event EventHandler<WindowDragEventArgs>? DragEnded;
 
-    public HookService(Dispatcher dispatcher, ConfigService configService)
+    public HookService(Dispatcher dispatcher, ConfigService configService,
+        WindowFilterService filterService)
     {
         _dispatcher = dispatcher;
         _configService = configService;
+        _filterService = filterService;
     }
 
     public void Start()
@@ -73,6 +76,9 @@ public class HookService : IDisposable
     {
         // Don't track our own windows
         if (IsOwnWindow(hwnd)) return;
+
+        // Check window filter (blacklist, system windows, size threshold)
+        if (!_filterService.ShouldManage(hwnd)) return;
 
         // Check modifier key
         if (!IsModifierPressed()) return;
