@@ -1,0 +1,26 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+    <sys:String x:Key="App.Title">WinLayout — Window Layout Manager</sys:String>
+    <sys:String x:Key="Status.Ready">Shift+drag to snap windows</sys:String>
+    <sys:String x:Key="Status.Paused">Paused — drag snapping disabled</sys:String>
+    <sys:String x:Key="Editor.Open">Open Layout Editor</sys:String>
+    <sys:String x:Key="Tray.QuickFill">Quick Fill Layout</sys:String>
+    <sys:String x:Key="Tray.Editor">Layout Editor</sys:String>
+    <sys:String x:Key="Tray.Settings">Settings</sys:String>
+    <sys:String x:Key="Tray.Pause">Pause Snapping</sys:String>
+    <sys:String x:Key="Tray.Resume">Resume Snapping</sys:String>
+    <sys:String x:Key="Tray.Exit">Exit</sys:String>
+    <sys:String x:Key="Tray.Export">Export Layouts...</sys:String>
+    <sys:String x:Key="Tray.Import">Import Layouts...</sys:String>
+    <sys:String x:Key="Editor.Title">Layout Editor</sys:String>
+    <sys:String x:Key="Editor.Name">Name:</sys:String>
+    <sys:String x:Key="Editor.Template">Template:</sys:String>
+    <sys:String x:Key="Editor.New">New</sys:String>
+    <sys:String x:Key="Editor.Save">Save</sys:String>
+    <sys:String x:Key="Editor.Delete">Delete</sys:String>
+    <sys:String x:Key="Settings.Title">WinLayout Settings</sys:String>
+    <sys:String x:Key="Settings.General">General</sys:String>
+    <sys:String x:Key="Settings.Filter">Window Filter</sys:String>
+    <sys:String x:Key="Settings.Desktop">Virtual Desktop</sys:String>
+</ResourceDictionary>

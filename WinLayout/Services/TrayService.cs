@@ -125,6 +125,13 @@ public class TrayService : IDisposable
         _trayMenu.Items.Add(pauseItem);
 
         _trayMenu.Items.Add(new Separator());
+        _trayMenu.Items.Add(CreateMenuItem("语言 / Language", () =>
+        {
+            var next = LocalizationService.CurrentCulture == "zh-CN" ? "en-US" : "zh-CN";
+            LocalizationService.SetCulture(next);
+            RefreshLayoutMenuItems();
+        }));
+        _trayMenu.Items.Add(new Separator());
         _trayMenu.Items.Add(CreateMenuItem("退出", () =>
         {
             Dispose();

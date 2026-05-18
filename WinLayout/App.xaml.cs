@@ -13,6 +13,9 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
+        // Initialize localization
+        Services.LocalizationService.Initialize();
+
         // Register for automatic restart on crash
         User32.RegisterApplicationRestart(string.Empty, 0);
 
