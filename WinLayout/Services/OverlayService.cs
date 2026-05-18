@@ -9,18 +9,11 @@ namespace WinLayout.Services;
 public class OverlayService
 {
     private OverlayWindow? _overlayWindow;
-    private readonly ConfigService _configService;
+    private readonly LayoutService _layoutService;
 
-    // Hardcoded default layout (left-right split) until layout editor is built
-    private static readonly List<ZoneDefinition> DefaultZones = new()
+    public OverlayService(ConfigService configService, LayoutService layoutService)
     {
-        new ZoneDefinition { Index = 1, Left = 0.0, Top = 0.0, Width = 0.5, Height = 1.0, Padding = 0 },
-        new ZoneDefinition { Index = 2, Left = 0.5, Top = 0.0, Width = 0.5, Height = 1.0, Padding = 0 }
-    };
-
-    public OverlayService(ConfigService configService)
-    {
-        _configService = configService;
+        _layoutService = layoutService;
     }
 
     public void Show(int cursorX, int cursorY)
@@ -78,8 +71,16 @@ public class OverlayService
 
     private List<ZoneDefinition> GetActiveZones()
     {
-        var layouts = _configService.LoadAllLayouts();
-        return layouts.Count > 0 ? layouts[0].Zones : DefaultZones;
+        var layout = _layoutService.GetActiveLayout();
+        if (layout != null && layout.Zones.Count > 0)
+            return layout.Zones;
+
+        // Fallback: default left-right split
+        return new List<ZoneDefinition>
+        {
+            new() { Index = 1, Left = 0.0, Top = 0.0, Width = 0.5, Height = 1.0, Padding = 0 },
+            new() { Index = 2, Left = 0.5, Top = 0.0, Width = 0.5, Height = 1.0, Padding = 0 }
+        };
     }
 
     private void EnsureOverlayWindow()

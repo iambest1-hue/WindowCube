@@ -1,12 +1,14 @@
 using System.Diagnostics;
 using System.Windows;
 using WinLayout.Services;
+using WinLayout.Views;
 
 namespace WinLayout;
 
-public partial class MainWindow : System.Windows.Window
+public partial class MainWindow : Window
 {
     private readonly ConfigService _configService = new();
+    private readonly LayoutService _layoutService;
     private readonly WindowManager _windowManager = new();
     private HookService? _hookService;
     private OverlayService? _overlayService;
@@ -15,7 +17,8 @@ public partial class MainWindow : System.Windows.Window
     {
         InitializeComponent();
 
-        _overlayService = new OverlayService(_configService);
+        _layoutService = new LayoutService(_configService);
+        _overlayService = new OverlayService(_configService, _layoutService);
 
         _hookService = new HookService(Dispatcher, _configService);
         _hookService.DragStarted += OnDragStarted;
@@ -23,7 +26,24 @@ public partial class MainWindow : System.Windows.Window
         _hookService.DragEnded += OnDragEnded;
         _hookService.Start();
 
-        Title = "WinLayout — Shift+拖拽吸附就绪";
+        var layout = _layoutService.GetActiveLayout();
+        StatusLabel.Text = layout != null
+            ? $"当前布局: {layout.Name} — Shift+拖拽吸附就绪"
+            : "Shift+拖拽吸附就绪";
+    }
+
+    private void OnOpenEditor(object sender, RoutedEventArgs e)
+    {
+        var editor = new LayoutEditorWindow(_layoutService, _configService);
+        editor.Owner = this;
+        editor.Closed += (_, _) =>
+        {
+            var layout = _layoutService.GetActiveLayout();
+            StatusLabel.Text = layout != null
+                ? $"当前布局: {layout.Name} — Shift+拖拽吸附就绪"
+                : "Shift+拖拽吸附就绪";
+        };
+        editor.ShowDialog();
     }
 
     private void OnDragStarted(object? sender, WindowDragEventArgs e)
