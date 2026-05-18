@@ -11,6 +11,7 @@ public partial class MainWindow : Window
     private readonly LayoutService _layoutService;
     private readonly MonitorService _monitorService;
     private readonly WindowFilterService _filterService;
+    private readonly VirtualDesktopService _virtualDesktopService;
     private readonly WindowManager _windowManager = new();
     private HookService? _hookService;
     private OverlayService? _overlayService;
@@ -23,6 +24,7 @@ public partial class MainWindow : Window
         _layoutService = new LayoutService(_configService);
         _monitorService = new MonitorService(_configService, _layoutService);
         _filterService = new WindowFilterService(_configService);
+        _virtualDesktopService = new VirtualDesktopService(_configService, _layoutService);
         _overlayService = new OverlayService(_configService, _layoutService, _monitorService);
 
         var helper = new System.Windows.Interop.WindowInteropHelper(this);
@@ -40,6 +42,14 @@ public partial class MainWindow : Window
         _trayService.PauseStateChanged += (_, paused) => OnPauseChanged(paused);
         _trayService.LayoutSwitchRequested += (_, layoutId) => OnLayoutSwitched(layoutId);
         _trayService.QuickFillRequested += (_, _) => OnQuickFill();
+
+        _virtualDesktopService.DesktopChanged += (_, _) =>
+        {
+            var config = _configService.LoadConfig();
+            if (config.AutoApplyOnDesktopSwitch)
+                OnQuickFill();
+        };
+        _virtualDesktopService.Start();
 
         UpdateStatus();
     }
@@ -144,6 +154,7 @@ public partial class MainWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         _trayService?.Dispose();
+        _virtualDesktopService?.Dispose();
         _hookService?.Dispose();
         base.OnClosed(e);
     }
