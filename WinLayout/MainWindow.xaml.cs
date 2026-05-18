@@ -36,6 +36,7 @@ public partial class MainWindow : Window
 
         _trayService = new TrayService(this, _layoutService, _monitorService, _configService);
         _trayService.OpenEditorRequested += (_, _) => OnOpenEditor(this, new RoutedEventArgs());
+        _trayService.OpenSettingsRequested += (_, _) => OpenSettings();
         _trayService.PauseStateChanged += (_, paused) => OnPauseChanged(paused);
         _trayService.LayoutSwitchRequested += (_, layoutId) => OnLayoutSwitched(layoutId);
         _trayService.QuickFillRequested += (_, _) => OnQuickFill();
@@ -79,6 +80,13 @@ public partial class MainWindow : Window
             _hookService.Start();
         }
         StatusLabel.Text = paused ? "已暂停 — 拖拽吸附禁用" : "Shift+拖拽吸附就绪";
+    }
+
+    private void OpenSettings()
+    {
+        var settings = new SettingsWindow(_configService);
+        settings.Owner = this;
+        settings.ShowDialog();
     }
 
     private void OnQuickFill()
