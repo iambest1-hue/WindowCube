@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 using System.Windows;
+using System.Windows.Interop;
 using WinLayout.Services;
 using WinLayout.Views;
 
@@ -11,32 +12,38 @@ public partial class MainWindow : Window
 {
     private readonly ConfigService _configService = new();
     private readonly LayoutService _layoutService;
-    private readonly MonitorService _monitorService;
-    private readonly WindowFilterService _filterService;
-    private readonly VirtualDesktopService _virtualDesktopService;
     private readonly WindowManager _windowManager = new();
+    private readonly WindowFilterService _filterService;
     private HookService? _hookService;
     private OverlayService? _overlayService;
+    private MonitorService? _monitorService;
     private TrayService? _trayService;
+    private VirtualDesktopService? _virtualDesktopService;
 
     public MainWindow()
     {
         InitializeComponent();
 
         _layoutService = new LayoutService(_configService);
-        _monitorService = new MonitorService(_configService, _layoutService);
         _filterService = new WindowFilterService(_configService);
-        _virtualDesktopService = new VirtualDesktopService(_configService, _layoutService);
-        _overlayService = new OverlayService(_configService, _layoutService, _monitorService);
-
-        var helper = new System.Windows.Interop.WindowInteropHelper(this);
-        _monitorService.Initialize(helper.Handle);
 
         _hookService = new HookService(Dispatcher, _configService, _filterService);
         _hookService.DragStarted += OnDragStarted;
         _hookService.DragMoved += OnDragMoved;
         _hookService.DragEnded += OnDragEnded;
         _hookService.Start();
+
+        SourceInitialized += OnSourceInitialized;
+    }
+
+    private void OnSourceInitialized(object? sender, EventArgs e)
+    {
+        var handle = new WindowInteropHelper(this).Handle;
+
+        _monitorService = new MonitorService(_configService, _layoutService);
+        _monitorService.Initialize(handle);
+
+        _overlayService = new OverlayService(_configService, _layoutService, _monitorService);
 
         _trayService = new TrayService(this, _layoutService, _monitorService, _configService);
         _trayService.OpenEditorRequested += (_, _) => OnOpenEditor(this, new RoutedEventArgs());
@@ -47,10 +54,10 @@ public partial class MainWindow : Window
         _trayService.ExportRequested += (_, _) => OnExportLayouts();
         _trayService.ImportRequested += (_, _) => OnImportLayouts();
 
+        _virtualDesktopService = new VirtualDesktopService(_configService, _layoutService);
         _virtualDesktopService.DesktopChanged += (_, _) =>
         {
-            var config = _configService.LoadConfig();
-            if (config.AutoApplyOnDesktopSwitch)
+            if (_configService.LoadConfig().AutoApplyOnDesktopSwitch)
                 OnQuickFill();
         };
         _virtualDesktopService.Start();
@@ -78,6 +85,13 @@ public partial class MainWindow : Window
         editor.ShowDialog();
     }
 
+    private void OpenSettings()
+    {
+        var settings = new SettingsWindow(_configService);
+        settings.Owner = this;
+        settings.ShowDialog();
+    }
+
     private void OnPauseChanged(bool paused)
     {
         if (paused)
@@ -96,11 +110,28 @@ public partial class MainWindow : Window
         StatusLabel.Text = paused ? "已暂停 — 拖拽吸附禁用" : "Shift+拖拽吸附就绪";
     }
 
-    private void OpenSettings()
+    private void OnQuickFill()
     {
-        var settings = new SettingsWindow(_configService);
-        settings.Owner = this;
-        settings.ShowDialog();
+        var layout = _layoutService.GetActiveLayout();
+        if (layout == null || _windowManager.LastSnapTarget == null) return;
+
+        var lastTarget = _windowManager.LastSnapTarget;
+        _windowManager.QuickFill(layout.Zones,
+            lastTarget.ScreenX, lastTarget.ScreenY,
+            lastTarget.ScreenWidth, lastTarget.ScreenHeight);
+    }
+
+    private void OnLayoutSwitched(string layoutId)
+    {
+        var layout = _layoutService.GetActiveLayout();
+        if (layout == null || _windowManager.LastSnapTarget == null) return;
+
+        var lastTarget = _windowManager.LastSnapTarget;
+        _windowManager.RearrangeAll(layout.Zones,
+            lastTarget.ScreenX, lastTarget.ScreenY,
+            lastTarget.ScreenWidth, lastTarget.ScreenHeight);
+
+        UpdateStatus();
     }
 
     private void OnExportLayouts()
@@ -139,37 +170,13 @@ public partial class MainWindow : Window
                 }
                 _trayService?.RefreshLayoutMenuItems();
                 UpdateStatus();
-                System.Windows.MessageBox.Show($"已导入 {layouts?.Count ?? 0} 个布局。", "导入成功");
+                MessageBox.Show($"已导入 {layouts?.Count ?? 0} 个布局。", "导入成功");
             }
             catch (Exception ex)
             {
-                System.Windows.MessageBox.Show($"导入失败: {ex.Message}", "错误");
+                MessageBox.Show($"导入失败: {ex.Message}", "错误");
             }
         }
-    }
-
-    private void OnQuickFill()
-    {
-        var layout = _layoutService.GetActiveLayout();
-        if (layout == null || _windowManager.LastSnapTarget == null) return;
-
-        var lastTarget = _windowManager.LastSnapTarget;
-        _windowManager.QuickFill(layout.Zones,
-            lastTarget.ScreenX, lastTarget.ScreenY,
-            lastTarget.ScreenWidth, lastTarget.ScreenHeight);
-    }
-
-    private void OnLayoutSwitched(string layoutId)
-    {
-        var layout = _layoutService.GetActiveLayout();
-        if (layout == null || _windowManager.LastSnapTarget == null) return;
-
-        var lastTarget = _windowManager.LastSnapTarget;
-        _windowManager.RearrangeAll(layout.Zones,
-            lastTarget.ScreenX, lastTarget.ScreenY,
-            lastTarget.ScreenWidth, lastTarget.ScreenHeight);
-
-        UpdateStatus();
     }
 
     private void OnDragStarted(object? sender, WindowDragEventArgs e)
