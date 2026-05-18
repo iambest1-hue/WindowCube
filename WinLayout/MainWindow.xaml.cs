@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.IO;
+using System.Text.Json;
 using System.Windows;
 using WinLayout.Services;
 using WinLayout.Views;
@@ -42,6 +44,8 @@ public partial class MainWindow : Window
         _trayService.PauseStateChanged += (_, paused) => OnPauseChanged(paused);
         _trayService.LayoutSwitchRequested += (_, layoutId) => OnLayoutSwitched(layoutId);
         _trayService.QuickFillRequested += (_, _) => OnQuickFill();
+        _trayService.ExportRequested += (_, _) => OnExportLayouts();
+        _trayService.ImportRequested += (_, _) => OnImportLayouts();
 
         _virtualDesktopService.DesktopChanged += (_, _) =>
         {
@@ -97,6 +101,51 @@ public partial class MainWindow : Window
         var settings = new SettingsWindow(_configService);
         settings.Owner = this;
         settings.ShowDialog();
+    }
+
+    private void OnExportLayouts()
+    {
+        var dlg = new Microsoft.Win32.SaveFileDialog
+        {
+            Filter = "JSON 文件|*.json",
+            DefaultExt = ".json",
+            FileName = "WinLayout_Export.json"
+        };
+        if (dlg.ShowDialog() == true)
+        {
+            var layouts = _layoutService.GetAllLayouts();
+            var json = JsonSerializer.Serialize(layouts, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(dlg.FileName, json);
+        }
+    }
+
+    private void OnImportLayouts()
+    {
+        var dlg = new Microsoft.Win32.OpenFileDialog
+        {
+            Filter = "JSON 文件|*.json",
+            DefaultExt = ".json"
+        };
+        if (dlg.ShowDialog() == true)
+        {
+            try
+            {
+                var json = File.ReadAllText(dlg.FileName);
+                var layouts = JsonSerializer.Deserialize<List<Models.LayoutDefinition>>(json);
+                if (layouts != null)
+                {
+                    foreach (var layout in layouts)
+                        _layoutService.Save(layout);
+                }
+                _trayService?.RefreshLayoutMenuItems();
+                UpdateStatus();
+                System.Windows.MessageBox.Show($"已导入 {layouts?.Count ?? 0} 个布局。", "导入成功");
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"导入失败: {ex.Message}", "错误");
+            }
+        }
     }
 
     private void OnQuickFill()

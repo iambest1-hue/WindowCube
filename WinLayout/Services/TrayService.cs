@@ -27,6 +27,8 @@ public class TrayService : IDisposable
     public event EventHandler<string>? LayoutSwitchRequested;
     public event EventHandler<bool>? PauseStateChanged;
     public event EventHandler? QuickFillRequested;
+    public event EventHandler? ExportRequested;
+    public event EventHandler? ImportRequested;
 
     public bool IsPaused => _isPaused;
 
@@ -106,6 +108,8 @@ public class TrayService : IDisposable
         _trayMenu.Items.Add(new Separator());
         _trayMenu.Items.Add(CreateMenuItem("快速填充当前布局", () => QuickFillRequested?.Invoke(this, EventArgs.Empty)));
         _trayMenu.Items.Add(new Separator());
+        _trayMenu.Items.Add(CreateMenuItem("导出布局...", () => ExportRequested?.Invoke(this, EventArgs.Empty)));
+        _trayMenu.Items.Add(CreateMenuItem("导入布局...", () => ImportRequested?.Invoke(this, EventArgs.Empty)));
         _trayMenu.Items.Add(CreateMenuItem("布局编辑器", () => OpenEditorRequested?.Invoke(this, EventArgs.Empty)));
         _trayMenu.Items.Add(CreateMenuItem("设置", () => OpenSettingsRequested?.Invoke(this, EventArgs.Empty)));
         _trayMenu.Items.Add(new Separator());
