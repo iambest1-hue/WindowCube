@@ -100,7 +100,8 @@ public partial class MainWindow : Window
     private void OnDragMoved(object? sender, WindowDragEventArgs e)
     {
         if (_trayService?.IsPaused == true) return;
-        _overlayService?.UpdateCursor(e.CursorX, e.CursorY);
+        _overlayService?.UpdateCursor(e.CursorX, e.CursorY,
+            e.WindowX, e.WindowY, e.WindowWidth, e.WindowHeight);
     }
 
     private void OnDragEnded(object? sender, WindowDragEventArgs e)

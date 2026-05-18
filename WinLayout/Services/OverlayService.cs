@@ -33,10 +33,20 @@ public class OverlayService
         _overlayWindow!.ShowOverlay(bounds.X, bounds.Y, bounds.Width, bounds.Height, zones, highlightedIndex);
     }
 
-    public void UpdateCursor(int cursorX, int cursorY)
+    public void UpdateCursor(int cursorX, int cursorY, int windowX, int windowY,
+        int windowWidth, int windowHeight)
     {
         if (_overlayWindow == null || _overlayWindow.Visibility != Visibility.Visible)
             return;
+
+        // Cross-monitor detection: check which screen the window center is on
+        int windowCenterX = windowX + windowWidth / 2;
+        int windowCenterY = windowY + windowHeight / 2;
+        var windowMonitor = _monitorService.GetMonitorAtCursor(windowCenterX, windowCenterY);
+        if (windowMonitor != null && windowMonitor.ScreenId != _currentScreenId)
+        {
+            _currentScreenId = windowMonitor.ScreenId;
+        }
 
         var bounds = GetScreenBounds(cursorX, cursorY);
         var zones = GetActiveZones();

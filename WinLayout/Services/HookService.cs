@@ -11,6 +11,8 @@ public class WindowDragEventArgs : EventArgs
     public int CursorY { get; init; }
     public int WindowX { get; init; }
     public int WindowY { get; init; }
+    public int WindowWidth { get; init; }
+    public int WindowHeight { get; init; }
 }
 
 public class HookService : IDisposable
@@ -102,13 +104,17 @@ public class HookService : IDisposable
 
         if (movedX >= threshold || movedY >= threshold)
         {
+            int ww = rect.Right - rect.Left;
+            int wh = rect.Bottom - rect.Top;
             var args = new WindowDragEventArgs
             {
                 WindowHandle = hwnd,
                 CursorX = cursor.X,
                 CursorY = cursor.Y,
                 WindowX = rect.Left,
-                WindowY = rect.Top
+                WindowY = rect.Top,
+                WindowWidth = ww,
+                WindowHeight = wh
             };
 
             if (!_dragStartedFired)
@@ -134,13 +140,17 @@ public class HookService : IDisposable
 
         if (movedX >= threshold || movedY >= threshold)
         {
+            int ww = rect.Right - rect.Left;
+            int wh = rect.Bottom - rect.Top;
             var args = new WindowDragEventArgs
             {
                 WindowHandle = hwnd,
                 CursorX = cursor.X,
                 CursorY = cursor.Y,
                 WindowX = rect.Left,
-                WindowY = rect.Top
+                WindowY = rect.Top,
+                WindowWidth = ww,
+                WindowHeight = wh
             };
 
             _dispatcher.BeginInvoke(() => DragEnded?.Invoke(this, args));
