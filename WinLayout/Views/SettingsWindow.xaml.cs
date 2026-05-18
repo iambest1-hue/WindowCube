@@ -95,8 +95,8 @@ public partial class SettingsWindow : Window
                 SaveConfig();
             }
         };
-        RunAtStartupCheck.Checked += (_, _) => { _config.RunAtStartup = true; SaveConfig(); };
-        RunAtStartupCheck.Unchecked += (_, _) => { _config.RunAtStartup = false; SaveConfig(); };
+        RunAtStartupCheck.Checked += (_, _) => { _config.RunAtStartup = true; SaveConfig(); App.SetStartup(true); };
+        RunAtStartupCheck.Unchecked += (_, _) => { _config.RunAtStartup = false; SaveConfig(); App.SetStartup(false); };
         PerDesktopLayoutCheck.Checked += (_, _) => { _config.PerDesktopLayout = true; SaveConfig(); };
         PerDesktopLayoutCheck.Unchecked += (_, _) => { _config.PerDesktopLayout = false; SaveConfig(); };
         AutoApplyOnSwitchCheck.Checked += (_, _) => { _config.AutoApplyOnDesktopSwitch = true; SaveConfig(); };
