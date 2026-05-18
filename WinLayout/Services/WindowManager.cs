@@ -126,6 +126,54 @@ public class WindowManager
         }
     }
 
+    public void QuickFill(List<ZoneDefinition> zones, int screenX, int screenY,
+        int screenWidth, int screenHeight)
+    {
+        var windows = new List<IntPtr>();
+        User32.EnumWindows((hwnd, _) =>
+        {
+            if (IsFillableWindow(hwnd))
+                windows.Add(hwnd);
+            return true;
+        }, IntPtr.Zero);
+
+        for (int i = 0; i < Math.Min(windows.Count, zones.Count); i++)
+        {
+            var zone = zones[i];
+            SnapWindow(windows[i], new SnapTarget
+            {
+                ZoneIndex = i,
+                ScreenX = screenX,
+                ScreenY = screenY,
+                ScreenWidth = screenWidth,
+                ScreenHeight = screenHeight,
+                ZoneLeft = zone.Left,
+                ZoneTop = zone.Top,
+                ZoneWidth = zone.Width,
+                ZoneHeight = zone.Height,
+                Padding = zone.Padding
+            });
+        }
+    }
+
+    private static bool IsFillableWindow(IntPtr hwnd)
+    {
+        if (!User32.IsWindowVisible(hwnd)) return false;
+        if (User32.IsIconic(hwnd)) return false;
+
+        User32.GetWindowRect(hwnd, out var rect);
+        int w = rect.Right - rect.Left;
+        int h = rect.Bottom - rect.Top;
+        if (w < 200 || h < 150) return false;
+
+        // Skip windows without titles (tooltips, menus, etc.)
+        var sb = new System.Text.StringBuilder(256);
+        User32.GetWindowText(hwnd, sb, sb.Capacity);
+        if (sb.Length == 0) return false;
+
+        return true;
+    }
+
     public void RemoveWindow(IntPtr hwnd)
     {
         var keys = _zoneOccupancy.Where(kvp => kvp.Value == hwnd).Select(kvp => kvp.Key).ToList();

@@ -36,6 +36,7 @@ public partial class MainWindow : Window
         _trayService.OpenEditorRequested += (_, _) => OnOpenEditor(this, new RoutedEventArgs());
         _trayService.PauseStateChanged += (_, paused) => OnPauseChanged(paused);
         _trayService.LayoutSwitchRequested += (_, layoutId) => OnLayoutSwitched(layoutId);
+        _trayService.QuickFillRequested += (_, _) => OnQuickFill();
 
         UpdateStatus();
     }
@@ -76,6 +77,17 @@ public partial class MainWindow : Window
             _hookService.Start();
         }
         StatusLabel.Text = paused ? "已暂停 — 拖拽吸附禁用" : "Shift+拖拽吸附就绪";
+    }
+
+    private void OnQuickFill()
+    {
+        var layout = _layoutService.GetActiveLayout();
+        if (layout == null || _windowManager.LastSnapTarget == null) return;
+
+        var lastTarget = _windowManager.LastSnapTarget;
+        _windowManager.QuickFill(layout.Zones,
+            lastTarget.ScreenX, lastTarget.ScreenY,
+            lastTarget.ScreenWidth, lastTarget.ScreenHeight);
     }
 
     private void OnLayoutSwitched(string layoutId)
