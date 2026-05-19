@@ -33,9 +33,9 @@ public partial class MainWindow : Window
         _hookService.DragStarted += OnDragStarted;
         _hookService.DragMoved += OnDragMoved;
         _hookService.DragEnded += OnDragEnded;
-        _hookService.Start();
 
         SourceInitialized += OnSourceInitialized;
+        Loaded += OnLoaded;
     }
 
     private void OnSourceInitialized(object? sender, EventArgs e)
@@ -61,6 +61,11 @@ public partial class MainWindow : Window
         _virtualDesktopService.Start();
 
         UpdateStatus();
+    }
+
+    private void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        _hookService?.Start();
     }
 
     private void UpdateStatus()
