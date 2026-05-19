@@ -141,7 +141,7 @@ public class HookService : IDisposable
             if (!_dragStartedFired)
             {
                 _dragStartedFired = true;
-                _dispatcher.BeginInvoke(() => DragStarted?.Invoke(this, args));
+                _dispatcher.Invoke(() => DragStarted?.Invoke(this, args));
             }
 
             _dispatcher.BeginInvoke(() => DragMoved?.Invoke(this, args));
@@ -174,7 +174,7 @@ public class HookService : IDisposable
                 WindowHeight = wh
             };
 
-            _dispatcher.BeginInvoke(() => DragEnded?.Invoke(this, args));
+            _dispatcher.Invoke(() => DragEnded?.Invoke(this, args));
         }
 
         _isDragging = false;
