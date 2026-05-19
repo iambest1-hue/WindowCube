@@ -200,12 +200,18 @@ public partial class MainWindow : Window
         if (_trayService?.IsPaused == true) return;
 
         var target = _overlayService.LastSnapTarget;
+        _overlayService.Hide();
+
         if (target != null)
         {
             bool stacking = _hookService?.IsStackingKeyPressed() == true;
-            _windowManager.SnapWindow(e.WindowHandle, target, stacking);
+            var hwnd = e.WindowHandle;
+            // Dispatch at Background priority so SetWindowPos runs after
+            // the window has finished its own drag-drop positioning.
+            Dispatcher.BeginInvoke(
+                System.Windows.Threading.DispatcherPriority.Background,
+                () => _windowManager.SnapWindow(hwnd, target, stacking));
         }
-        _overlayService.Hide();
     }
 
     protected override void OnClosed(EventArgs e)
