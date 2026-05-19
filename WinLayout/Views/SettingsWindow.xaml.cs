@@ -25,8 +25,8 @@ public partial class SettingsWindow : Window
         // Modifier key
         var modIndex = _config.ModifierKey switch
         {
-            "Shift" => 0, "Ctrl" => 1, "Alt" => 2,
-            "Shift+Ctrl" => 3, "Shift+Alt" => 4, "Ctrl+Alt" => 5,
+            "None" => 0, "Shift" => 1, "Ctrl" => 2, "Alt" => 3,
+            "Shift+Ctrl" => 4, "Shift+Alt" => 5, "Ctrl+Alt" => 6,
             _ => 0
         };
         ModifierKeyCombo.SelectedIndex = modIndex;
@@ -107,9 +107,9 @@ public partial class SettingsWindow : Window
     {
         _config.ModifierKey = ModifierKeyCombo.SelectedIndex switch
         {
-            0 => "Shift", 1 => "Ctrl", 2 => "Alt",
-            3 => "Shift+Ctrl", 4 => "Shift+Alt", 5 => "Ctrl+Alt",
-            _ => "Shift"
+            0 => "None", 1 => "Shift", 2 => "Ctrl", 3 => "Alt",
+            4 => "Shift+Ctrl", 5 => "Shift+Alt", 6 => "Ctrl+Alt",
+            _ => "None"
         };
         _config.StackingKey = StackingKeyCombo.SelectedIndex switch
         {

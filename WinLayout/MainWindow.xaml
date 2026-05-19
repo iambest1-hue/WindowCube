@@ -7,13 +7,10 @@
         <TextBlock Text="WinLayout — 窗口吸附布局管理器"
                    FontSize="16" FontWeight="Bold"
                    HorizontalAlignment="Center" Margin="0,0,0,10"/>
-        <TextBlock x:Name="StatusLabel" Text="Shift+拖拽窗口吸附就绪"
+        <TextBlock x:Name="StatusLabel" Text="拖拽窗口即可吸附"
                    HorizontalAlignment="Center" Margin="0,0,0,15"
                    Foreground="Gray"/>
         <Button Content="打开布局编辑器" Click="OnOpenEditor"
-                Width="150" Height="35" HorizontalAlignment="Center" Margin="0,0,0,5"/>
-        <Button Content="测试叠加层" Click="OnTestOverlay"
-                Width="150" Height="35" HorizontalAlignment="Center"
-                Background="Orange" Margin="0,5,0,0"/>
+                Width="150" Height="35" HorizontalAlignment="Center"/>
     </StackPanel>
 </Window>

@@ -31,14 +31,31 @@ public partial class OverlayWindow : Window
         User32.SetWindowLong(hwnd, User32.GWL_EXSTYLE, exStyle);
     }
 
+    private double _dpiScaleX = 1.0;
+    private double _dpiScaleY = 1.0;
+
     public void ShowOverlay(int screenX, int screenY, int screenWidth, int screenHeight,
         List<ZoneDefinition> zones, int highlightedZoneIndex)
     {
-        // Position the window to cover this screen
-        Left = screenX;
-        Top = screenY;
-        Width = screenWidth;
-        Height = screenHeight;
+        // Get DPI scale on first call
+        if (_dpiScaleX == 1.0 && _dpiScaleY == 1.0)
+        {
+            var src = PresentationSource.FromVisual(this);
+            if (src != null)
+            {
+                _dpiScaleX = src.CompositionTarget.TransformToDevice.M11;
+                _dpiScaleY = src.CompositionTarget.TransformToDevice.M22;
+            }
+        }
+
+        // Convert physical pixels to WPF DIPs
+        Left = screenX / _dpiScaleX;
+        Top = screenY / _dpiScaleY;
+        Width = screenWidth / _dpiScaleX;
+        Height = screenHeight / _dpiScaleY;
+
+        double cw = Width;
+        double ch = Height;
 
         // Clear previous elements
         OverlayCanvas.Children.Clear();
@@ -47,8 +64,8 @@ public partial class OverlayWindow : Window
         // Full-screen dim background
         _dimBackground = new Rectangle
         {
-            Width = screenWidth,
-            Height = screenHeight,
+            Width = cw,
+            Height = ch,
             Fill = new SolidColorBrush(DimColor),
             IsHitTestVisible = false
         };
@@ -60,10 +77,10 @@ public partial class OverlayWindow : Window
         for (int i = 0; i < zones.Count; i++)
         {
             var zone = zones[i];
-            double x = zone.Left * screenWidth;
-            double y = zone.Top * screenHeight;
-            double w = zone.Width * screenWidth;
-            double h = zone.Height * screenHeight;
+            double x = zone.Left * cw;
+            double y = zone.Top * ch;
+            double w = zone.Width * cw;
+            double h = zone.Height * ch;
 
             if (i == highlightedZoneIndex)
             {

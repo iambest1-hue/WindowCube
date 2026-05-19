@@ -1,5 +1,3 @@
-using System.Diagnostics;
-using System.Windows.Threading;
 using WinLayout.Models;
 using WinLayout.Native;
 
@@ -18,7 +16,6 @@ public class WindowDragEventArgs : EventArgs
 
 public class HookService : IDisposable
 {
-    private readonly Dispatcher _dispatcher;
     private readonly WindowFilterService _filterService;
     private readonly UserConfig _config;
     private IntPtr _hook;
@@ -26,10 +23,8 @@ public class HookService : IDisposable
 
     private IntPtr _dragWindow;
     private int _dragStartX, _dragStartY;
-    private int _dragWindowStartX, _dragWindowStartY;
     private bool _isDragging;
     private bool _dragStartedFired;
-    private int _eventCount;
 
     public event EventHandler<WindowDragEventArgs>? DragStarted;
     public event EventHandler<WindowDragEventArgs>? DragMoved;
@@ -48,10 +43,8 @@ public class HookService : IDisposable
         _ => User32.VK_CONTROL
     };
 
-    public HookService(Dispatcher dispatcher, ConfigService configService,
-        WindowFilterService filterService)
+    public HookService(ConfigService configService, WindowFilterService filterService)
     {
-        _dispatcher = dispatcher;
         _filterService = filterService;
         _config = configService.LoadConfig();
     }
@@ -66,7 +59,6 @@ public class HookService : IDisposable
             _hookDelegate,
             0, 0,
             User32.WINEVENT_INCONTEXT);
-        Logger.Log($"HookService started, hook=0x{_hook:X}");
     }
 
     private void WinEventCallback(IntPtr hWinEventHook, uint eventType,
@@ -74,18 +66,10 @@ public class HookService : IDisposable
     {
         try
         {
-            _eventCount++;
-
-            if (hwnd == IntPtr.Zero || idObject != 0)
-            {
-                if (_eventCount % 500 == 0)
-                    Logger.Log($"WinEvent filtered: {_eventCount} total, hwnd=0x{hwnd:X} idObj={idObject}");
-                return;
-            }
+            if (hwnd == IntPtr.Zero || idObject != 0) return;
 
             if (eventType == User32.EVENT_SYSTEM_MOVESIZESTART)
             {
-                Logger.Log($"EVENT_MOVESIZESTART hwnd=0x{hwnd:X}");
                 OnMoveSizeStart(hwnd);
             }
             else if (_isDragging && eventType == User32.EVENT_OBJECT_LOCATIONCHANGE)
@@ -94,37 +78,28 @@ public class HookService : IDisposable
             }
             else if (eventType == User32.EVENT_SYSTEM_MOVESIZEEND)
             {
-                Logger.Log($"EVENT_MOVESIZEEND hwnd=0x{hwnd:X}");
                 OnMoveSizeEnd(hwnd);
             }
         }
         catch (Exception ex)
         {
-            Logger.Log($"WinEventCallback ERROR: {ex}");
+            System.Diagnostics.Debug.WriteLine($"[Hook] WinEventCallback error: {ex.Message}");
         }
     }
 
     private void OnMoveSizeStart(IntPtr hwnd)
     {
-        Logger.Log($"OnMoveSizeStart hwnd=0x{hwnd:X}");
-
-        if (IsOwnWindow(hwnd)) { Logger.Log("  -> rejected: own window"); return; }
-        if (!_filterService.ShouldManage(hwnd)) { Logger.Log("  -> rejected: filter"); return; }
-        if (!IsModifierPressed()) { Logger.Log("  -> rejected: modifier not pressed"); return; }
+        if (IsOwnWindow(hwnd)) return;
+        if (!_filterService.ShouldManage(hwnd)) return;
+        if (!IsModifierPressed()) return;
 
         _dragWindow = hwnd;
         _isDragging = true;
-        Logger.Log($"  -> ACCEPTED, modifier={_config.ModifierKey}");
 
         User32.GetCursorPos(out var cursor);
         User32.GetWindowRect(hwnd, out var rect);
-
         _dragStartX = cursor.X;
         _dragStartY = cursor.Y;
-        _dragWindowStartX = rect.Left;
-        _dragWindowStartY = rect.Top;
-
-        Debug.WriteLine($"[Hook] MoveSizeStart hwnd=0x{hwnd:X} pos=({cursor.X},{cursor.Y})");
     }
 
     private void OnLocationChange(IntPtr hwnd)
@@ -156,11 +131,10 @@ public class HookService : IDisposable
             if (!_dragStartedFired)
             {
                 _dragStartedFired = true;
-                Logger.Log($"  -> FIRING DragStarted cursor=({cursor.X},{cursor.Y}) moved=({movedX},{movedY})");
-                _dispatcher.BeginInvoke(() => DragStarted?.Invoke(this, args));
+                DragStarted?.Invoke(this, args);
             }
 
-            _dispatcher.BeginInvoke(() => DragMoved?.Invoke(this, args));
+            DragMoved?.Invoke(this, args);
         }
     }
 
@@ -190,14 +164,12 @@ public class HookService : IDisposable
                 WindowHeight = wh
             };
 
-            _dispatcher.BeginInvoke(() => DragEnded?.Invoke(this, args));
+            DragEnded?.Invoke(this, args);
         }
 
         _isDragging = false;
         _dragStartedFired = false;
         _dragWindow = IntPtr.Zero;
-
-        Debug.WriteLine($"[Hook] MoveSizeEnd hwnd=0x{hwnd:X}");
     }
 
     private bool IsModifierPressed()
@@ -205,13 +177,14 @@ public class HookService : IDisposable
         string key = _config.ModifierKey;
         return key switch
         {
+            "None" => true,
             "Shift" => IsKeyDown(User32.VK_SHIFT),
             "Ctrl" => IsKeyDown(User32.VK_CONTROL),
             "Alt" => IsKeyDown(User32.VK_MENU),
             "Shift+Ctrl" => IsKeyDown(User32.VK_SHIFT) && IsKeyDown(User32.VK_CONTROL),
             "Shift+Alt" => IsKeyDown(User32.VK_SHIFT) && IsKeyDown(User32.VK_MENU),
             "Ctrl+Alt" => IsKeyDown(User32.VK_CONTROL) && IsKeyDown(User32.VK_MENU),
-            _ => IsKeyDown(User32.VK_SHIFT)
+            _ => true
         };
     }
 

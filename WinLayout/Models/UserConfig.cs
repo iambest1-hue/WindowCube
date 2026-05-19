@@ -5,7 +5,7 @@ namespace WinLayout.Models;
 public class UserConfig
 {
     [JsonPropertyName("ModifierKey")]
-    public string ModifierKey { get; set; } = "Shift";
+    public string ModifierKey { get; set; } = "None";
 
     [JsonPropertyName("StackingKey")]
     public string StackingKey { get; set; } = "Ctrl";

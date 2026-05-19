@@ -29,7 +29,7 @@ public partial class MainWindow : Window
         _monitorService = new MonitorService(_configService, _layoutService);
         _overlayService = new OverlayService(_configService, _layoutService, _monitorService);
 
-        _hookService = new HookService(Dispatcher, _configService, _filterService);
+        _hookService = new HookService(_configService, _filterService);
         _hookService.DragStarted += OnDragStarted;
         _hookService.DragMoved += OnDragMoved;
         _hookService.DragEnded += OnDragEnded;
@@ -67,8 +67,8 @@ public partial class MainWindow : Window
     {
         var layout = _layoutService.GetActiveLayout();
         StatusLabel.Text = layout != null
-            ? $"当前布局: {layout.Name} — Shift+拖拽吸附就绪"
-            : "Shift+拖拽吸附就绪";
+            ? $"当前布局: {layout.Name} — 拖拽吸附就绪"
+            : "拖拽吸附就绪";
     }
 
     private void OnOpenEditor(object sender, RoutedEventArgs e)
@@ -81,14 +81,6 @@ public partial class MainWindow : Window
             UpdateStatus();
         };
         editor.ShowDialog();
-    }
-
-    private void OnTestOverlay(object sender, RoutedEventArgs e)
-    {
-        Logger.Log("=== TEST: Manual overlay trigger ===");
-        WinLayout.Native.User32.GetCursorPos(out var pt);
-        _overlayService.Show(pt.X, pt.Y);
-        Logger.Log($"  Show() called at ({pt.X},{pt.Y})");
     }
 
     private void OpenSettings()
@@ -107,7 +99,7 @@ public partial class MainWindow : Window
         }
         else
         {
-            _hookService = new HookService(Dispatcher, _configService, _filterService);
+            _hookService = new HookService(_configService, _filterService);
             _hookService.DragStarted += OnDragStarted;
             _hookService.DragMoved += OnDragMoved;
             _hookService.DragEnded += OnDragEnded;
@@ -187,8 +179,7 @@ public partial class MainWindow : Window
 
     private void OnDragStarted(object? sender, WindowDragEventArgs e)
     {
-        Logger.Log($"MODragStarted hwnd=0x{e.WindowHandle:X} cursor=({e.CursorX},{e.CursorY})");
-        if (_trayService?.IsPaused == true) { Logger.Log("  -> paused"); return; }
+        if (_trayService?.IsPaused == true) return;
         _overlayService.Show(e.CursorX, e.CursorY);
     }
 
@@ -201,7 +192,6 @@ public partial class MainWindow : Window
 
     private void OnDragEnded(object? sender, WindowDragEventArgs e)
     {
-        Logger.Log($"MODragEnded hwnd=0x{e.WindowHandle:X} cursor=({e.CursorX},{e.CursorY})");
         if (_trayService?.IsPaused == true) return;
 
         var target = _overlayService.GetSnapTarget(e.CursorX, e.CursorY);
