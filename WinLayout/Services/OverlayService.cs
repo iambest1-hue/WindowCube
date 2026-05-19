@@ -65,7 +65,7 @@ public class OverlayService
             return null;
 
         var zone = zones[zoneIndex];
-        return new SnapTarget
+        _lastSnapTarget = new SnapTarget
         {
             ZoneIndex = zoneIndex,
             ScreenX = screen.X,
@@ -78,7 +78,12 @@ public class OverlayService
             ZoneHeight = zone.Height,
             Padding = zone.Padding
         };
+        return _lastSnapTarget;
     }
+
+    /// <summary>Returns the last snap target without recalculating from cursor position.</summary>
+    public SnapTarget? LastSnapTarget => _lastSnapTarget;
+    private SnapTarget? _lastSnapTarget;
 
     public void Hide()
     {

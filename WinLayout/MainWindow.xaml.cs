@@ -199,7 +199,7 @@ public partial class MainWindow : Window
     {
         if (_trayService?.IsPaused == true) return;
 
-        var target = _overlayService.GetSnapTarget(e.CursorX, e.CursorY);
+        var target = _overlayService.LastSnapTarget;
         if (target != null)
         {
             bool stacking = _hookService?.IsStackingKeyPressed() == true;
