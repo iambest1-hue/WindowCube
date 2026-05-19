@@ -83,6 +83,14 @@ public partial class MainWindow : Window
         editor.ShowDialog();
     }
 
+    private void OnTestOverlay(object sender, RoutedEventArgs e)
+    {
+        Logger.Log("=== TEST: Manual overlay trigger ===");
+        WinLayout.Native.User32.GetCursorPos(out var pt);
+        _overlayService.Show(pt.X, pt.Y);
+        Logger.Log($"  Show() called at ({pt.X},{pt.Y})");
+    }
+
     private void OpenSettings()
     {
         var settings = new SettingsWindow(_configService);
@@ -179,31 +187,30 @@ public partial class MainWindow : Window
 
     private void OnDragStarted(object? sender, WindowDragEventArgs e)
     {
-        if (_trayService?.IsPaused == true) return;
-        _overlayService?.Show(e.CursorX, e.CursorY);
+        Logger.Log($"MODragStarted hwnd=0x{e.WindowHandle:X} cursor=({e.CursorX},{e.CursorY})");
+        if (_trayService?.IsPaused == true) { Logger.Log("  -> paused"); return; }
+        _overlayService.Show(e.CursorX, e.CursorY);
     }
 
     private void OnDragMoved(object? sender, WindowDragEventArgs e)
     {
         if (_trayService?.IsPaused == true) return;
-        _overlayService?.UpdateCursor(e.CursorX, e.CursorY,
+        _overlayService.UpdateCursor(e.CursorX, e.CursorY,
             e.WindowX, e.WindowY, e.WindowWidth, e.WindowHeight);
     }
 
     private void OnDragEnded(object? sender, WindowDragEventArgs e)
     {
+        Logger.Log($"MODragEnded hwnd=0x{e.WindowHandle:X} cursor=({e.CursorX},{e.CursorY})");
         if (_trayService?.IsPaused == true) return;
 
-        if (_overlayService != null)
+        var target = _overlayService.GetSnapTarget(e.CursorX, e.CursorY);
+        if (target != null)
         {
-            var target = _overlayService.GetSnapTarget(e.CursorX, e.CursorY);
-            if (target != null)
-            {
-                bool stacking = _hookService?.IsStackingKeyPressed() == true;
-                _windowManager.SnapWindow(e.WindowHandle, target, stacking);
-            }
-            _overlayService.Hide();
+            bool stacking = _hookService?.IsStackingKeyPressed() == true;
+            _windowManager.SnapWindow(e.WindowHandle, target, stacking);
         }
+        _overlayService.Hide();
     }
 
     protected override void OnClosed(EventArgs e)

@@ -65,6 +65,7 @@ public class HookService : IDisposable
             _hookDelegate,
             0, 0,
             User32.WINEVENT_OUTOFCONTEXT);
+        Logger.Log($"HookService started, hook=0x{_hook:X}");
     }
 
     private void WinEventCallback(IntPtr hWinEventHook, uint eventType,
@@ -76,6 +77,7 @@ public class HookService : IDisposable
 
             if (eventType == User32.EVENT_SYSTEM_MOVESIZESTART)
             {
+                Logger.Log($"EVENT_MOVESIZESTART hwnd=0x{hwnd:X}");
                 OnMoveSizeStart(hwnd);
             }
             else if (_isDragging && eventType == User32.EVENT_OBJECT_LOCATIONCHANGE)
@@ -84,28 +86,27 @@ public class HookService : IDisposable
             }
             else if (eventType == User32.EVENT_SYSTEM_MOVESIZEEND)
             {
+                Logger.Log($"EVENT_MOVESIZEEND hwnd=0x{hwnd:X}");
                 OnMoveSizeEnd(hwnd);
             }
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[Hook] WinEventCallback error: {ex.Message}");
+            Logger.Log($"WinEventCallback ERROR: {ex}");
         }
     }
 
     private void OnMoveSizeStart(IntPtr hwnd)
     {
-        // Don't track our own windows
-        if (IsOwnWindow(hwnd)) return;
+        Logger.Log($"OnMoveSizeStart hwnd=0x{hwnd:X}");
 
-        // Check window filter (blacklist, system windows, size threshold)
-        if (!_filterService.ShouldManage(hwnd)) return;
-
-        // Check modifier key
-        if (!IsModifierPressed()) return;
+        if (IsOwnWindow(hwnd)) { Logger.Log("  -> rejected: own window"); return; }
+        if (!_filterService.ShouldManage(hwnd)) { Logger.Log("  -> rejected: filter"); return; }
+        if (!IsModifierPressed()) { Logger.Log("  -> rejected: modifier not pressed"); return; }
 
         _dragWindow = hwnd;
         _isDragging = true;
+        Logger.Log($"  -> ACCEPTED, modifier={_config.ModifierKey}");
 
         User32.GetCursorPos(out var cursor);
         User32.GetWindowRect(hwnd, out var rect);
@@ -147,6 +148,7 @@ public class HookService : IDisposable
             if (!_dragStartedFired)
             {
                 _dragStartedFired = true;
+                Logger.Log($"  -> FIRING DragStarted cursor=({cursor.X},{cursor.Y}) moved=({movedX},{movedY})");
                 _dispatcher.BeginInvoke(() => DragStarted?.Invoke(this, args));
             }
 
