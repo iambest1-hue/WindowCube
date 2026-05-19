@@ -29,7 +29,7 @@ public partial class MainWindow : Window
         _monitorService = new MonitorService(_configService, _layoutService);
         _overlayService = new OverlayService(_configService, _layoutService, _monitorService);
 
-        _hookService = new HookService(_configService, _filterService);
+        _hookService = new HookService(Dispatcher, _configService, _filterService);
         _hookService.DragStarted += OnDragStarted;
         _hookService.DragMoved += OnDragMoved;
         _hookService.DragEnded += OnDragEnded;
@@ -104,7 +104,7 @@ public partial class MainWindow : Window
         }
         else
         {
-            _hookService = new HookService(_configService, _filterService);
+            _hookService = new HookService(Dispatcher, _configService, _filterService);
             _hookService.DragStarted += OnDragStarted;
             _hookService.DragMoved += OnDragMoved;
             _hookService.DragEnded += OnDragEnded;

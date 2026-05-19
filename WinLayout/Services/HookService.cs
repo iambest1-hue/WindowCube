@@ -1,3 +1,4 @@
+using System.Windows.Threading;
 using WinLayout.Models;
 using WinLayout.Native;
 
@@ -16,6 +17,7 @@ public class WindowDragEventArgs : EventArgs
 
 public class HookService : IDisposable
 {
+    private readonly Dispatcher _dispatcher;
     private readonly WindowFilterService _filterService;
     private readonly UserConfig _config;
     private IntPtr _hook;
@@ -43,8 +45,9 @@ public class HookService : IDisposable
         _ => User32.VK_CONTROL
     };
 
-    public HookService(ConfigService configService, WindowFilterService filterService)
+    public HookService(Dispatcher dispatcher, ConfigService configService, WindowFilterService filterService)
     {
+        _dispatcher = dispatcher;
         _filterService = filterService;
         _config = configService.LoadConfig();
     }
@@ -58,7 +61,7 @@ public class HookService : IDisposable
             IntPtr.Zero,
             _hookDelegate,
             0, 0,
-            User32.WINEVENT_INCONTEXT);
+            User32.WINEVENT_OUTOFCONTEXT);
 
         var logPath = System.IO.Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -138,10 +141,10 @@ public class HookService : IDisposable
             if (!_dragStartedFired)
             {
                 _dragStartedFired = true;
-                DragStarted?.Invoke(this, args);
+                _dispatcher.BeginInvoke(() => DragStarted?.Invoke(this, args));
             }
 
-            DragMoved?.Invoke(this, args);
+            _dispatcher.BeginInvoke(() => DragMoved?.Invoke(this, args));
         }
     }
 
@@ -171,7 +174,7 @@ public class HookService : IDisposable
                 WindowHeight = wh
             };
 
-            DragEnded?.Invoke(this, args);
+            _dispatcher.BeginInvoke(() => DragEnded?.Invoke(this, args));
         }
 
         _isDragging = false;
