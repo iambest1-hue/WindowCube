@@ -85,8 +85,10 @@ public class HookService : IDisposable
             // Check if user is starting a drag (mouse down + movement)
             if (!IsModifierPressed()) return;
 
-            // Get window under cursor
-            var hwnd = WindowFromPoint(cursor);
+            // Get top-level window under cursor
+            var hwnd = User32.WindowFromPoint(cursor);
+            if (hwnd != IntPtr.Zero)
+                hwnd = User32.GetAncestor(hwnd, User32.GA_ROOT);
             if (hwnd == IntPtr.Zero) return;
             if (!_filterService.ShouldManage(hwnd)) return;
 
@@ -144,7 +146,7 @@ public class HookService : IDisposable
         int movedY = Math.Abs(cursor.Y - _dragStartY);
         int threshold = _config.DragThreshold;
 
-        if (movedX >= threshold || movedY >= threshold && _dragWindow != IntPtr.Zero)
+        if ((movedX >= threshold || movedY >= threshold) && _dragWindow != IntPtr.Zero)
         {
             User32.GetWindowRect(_dragWindow, out var rect);
             int ww = rect.Right - rect.Left;
