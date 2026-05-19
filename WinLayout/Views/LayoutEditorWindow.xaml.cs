@@ -231,7 +231,6 @@ public partial class LayoutEditorWindow : Window
             _zoneA = i;
             _zoneB = j;
             _isHorizontalSplitter = isH;
-            splitter.CaptureMouse();
             e.Handled = true;
         }
     }
@@ -282,7 +281,6 @@ public partial class LayoutEditorWindow : Window
 
         if (_draggingSplitter != null)
         {
-            (_draggingSplitter as Rectangle)?.ReleaseMouseCapture();
             _draggingSplitter = null;
         }
     }
