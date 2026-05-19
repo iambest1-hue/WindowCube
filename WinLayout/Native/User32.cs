@@ -6,6 +6,7 @@ internal static class User32
 {
     public const uint WINEVENT_OUTOFCONTEXT = 0;
     public const uint WINEVENT_SKIPOWNPROCESS = 2;
+    public const uint WINEVENT_INCONTEXT = 4;
 
     public const uint EVENT_SYSTEM_MOVESIZESTART = 0x000A;
     public const uint EVENT_SYSTEM_MOVESIZEEND = 0x000B;

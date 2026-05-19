@@ -29,6 +29,7 @@ public class HookService : IDisposable
     private int _dragWindowStartX, _dragWindowStartY;
     private bool _isDragging;
     private bool _dragStartedFired;
+    private int _eventCount;
 
     public event EventHandler<WindowDragEventArgs>? DragStarted;
     public event EventHandler<WindowDragEventArgs>? DragMoved;
@@ -64,7 +65,7 @@ public class HookService : IDisposable
             IntPtr.Zero,
             _hookDelegate,
             0, 0,
-            User32.WINEVENT_OUTOFCONTEXT);
+            User32.WINEVENT_INCONTEXT);
         Logger.Log($"HookService started, hook=0x{_hook:X}");
     }
 
@@ -73,7 +74,14 @@ public class HookService : IDisposable
     {
         try
         {
-            if (hwnd == IntPtr.Zero || idObject != 0) return;
+            _eventCount++;
+
+            if (hwnd == IntPtr.Zero || idObject != 0)
+            {
+                if (_eventCount % 500 == 0)
+                    Logger.Log($"WinEvent filtered: {_eventCount} total, hwnd=0x{hwnd:X} idObj={idObject}");
+                return;
+            }
 
             if (eventType == User32.EVENT_SYSTEM_MOVESIZESTART)
             {
