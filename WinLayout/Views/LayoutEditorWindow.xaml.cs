@@ -26,6 +26,9 @@ public partial class LayoutEditorWindow : Window
         _layoutService = layoutService;
         _configService = configService;
 
+        PreviewMouseMove += OnDragMouseMove;
+        PreviewMouseLeftButtonUp += OnDragMouseUp;
+
         LoadTemplates();
         LoadCurrentLayout();
     }
@@ -235,10 +238,8 @@ public partial class LayoutEditorWindow : Window
         }
     }
 
-    protected override void OnPreviewMouseMove(MouseEventArgs e)
+    private void OnDragMouseMove(object sender, MouseEventArgs e)
     {
-        base.OnPreviewMouseMove(e);
-
         if (_draggingSplitter == null) return;
 
         var pos = e.GetPosition(PreviewCanvas);
@@ -250,24 +251,18 @@ public partial class LayoutEditorWindow : Window
 
         if (_isHorizontalSplitter)
         {
-            // Adjust heights
             double newAHeight = relY - a.Top;
-            double newBTop = relY;
             double newBHeight = (b.Top + b.Height) - relY;
-
             a.Height = Math.Max(0.05, newAHeight);
-            b.Top = newBTop;
+            b.Top = relY;
             b.Height = Math.Max(0.05, newBHeight);
         }
         else
         {
-            // Adjust widths
             double newAWidth = relX - a.Left;
-            double newBLeft = relX;
             double newBWidth = (b.Left + b.Width) - relX;
-
             a.Width = Math.Max(0.05, newAWidth);
-            b.Left = newBLeft;
+            b.Left = relX;
             b.Width = Math.Max(0.05, newBWidth);
         }
 
@@ -275,14 +270,9 @@ public partial class LayoutEditorWindow : Window
         UpdateStatus(relX, relY);
     }
 
-    protected override void OnPreviewMouseUp(MouseButtonEventArgs e)
+    private void OnDragMouseUp(object sender, MouseButtonEventArgs e)
     {
-        base.OnPreviewMouseUp(e);
-
-        if (_draggingSplitter != null)
-        {
-            _draggingSplitter = null;
-        }
+        _draggingSplitter = null;
     }
 
     private void UpdateStatus(double relX, double relY)
