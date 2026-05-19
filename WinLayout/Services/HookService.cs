@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Windows.Threading;
 using WinLayout.Models;
 using WinLayout.Native;
@@ -17,16 +18,14 @@ public class WindowDragEventArgs : EventArgs
 
 public class HookService : IDisposable
 {
-    private readonly Dispatcher _dispatcher;
+    private readonly DispatcherTimer _timer;
     private readonly WindowFilterService _filterService;
     private readonly UserConfig _config;
-    private IntPtr _hook;
-    private User32.WinEventDelegate? _hookDelegate;
-
     private IntPtr _dragWindow;
     private int _dragStartX, _dragStartY;
     private bool _isDragging;
     private bool _dragStartedFired;
+    private int _lastCursorX, _lastCursorY;
 
     public event EventHandler<WindowDragEventArgs>? DragStarted;
     public event EventHandler<WindowDragEventArgs>? DragMoved;
@@ -45,91 +44,79 @@ public class HookService : IDisposable
         _ => User32.VK_CONTROL
     };
 
-    public HookService(Dispatcher dispatcher, ConfigService configService, WindowFilterService filterService)
+    public HookService(Dispatcher dispatcher, ConfigService configService,
+        WindowFilterService filterService)
     {
-        _dispatcher = dispatcher;
         _filterService = filterService;
         _config = configService.LoadConfig();
+
+        _timer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(30)
+        };
+        _timer.Tick += OnTimerTick;
     }
 
     public void Start()
     {
-        _hookDelegate = WinEventCallback;
-        _hook = User32.SetWinEventHook(
-            User32.EVENT_SYSTEM_MOVESIZESTART,
-            User32.EVENT_OBJECT_LOCATIONCHANGE,
-            IntPtr.Zero,
-            _hookDelegate,
-            0, 0,
-            User32.WINEVENT_OUTOFCONTEXT);
-
-        var logPath = System.IO.Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "WinLayout", "hook.log");
-        var dir = System.IO.Path.GetDirectoryName(logPath);
-        if (dir != null) System.IO.Directory.CreateDirectory(dir);
-        System.IO.File.WriteAllText(logPath, $"hook=0x{_hook:X} time={DateTime.Now:HH:mm:ss}");
+        _timer.Start();
+        Debug.WriteLine($"[Hook] Polling started, interval=30ms");
     }
 
-    private void WinEventCallback(IntPtr hWinEventHook, uint eventType,
-        IntPtr hwnd, int idObject, int idChild, uint dwEventThread, uint dwmsEventTime)
+    private void OnTimerTick(object? sender, EventArgs e)
     {
-        try
-        {
-            if (hwnd == IntPtr.Zero || idObject != 0) return;
-
-            if (eventType == User32.EVENT_SYSTEM_MOVESIZESTART)
-            {
-                OnMoveSizeStart(hwnd);
-            }
-            else if (_isDragging && eventType == User32.EVENT_OBJECT_LOCATIONCHANGE)
-            {
-                OnLocationChange(hwnd);
-            }
-            else if (eventType == User32.EVENT_SYSTEM_MOVESIZEEND)
-            {
-                OnMoveSizeEnd(hwnd);
-            }
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[Hook] WinEventCallback error: {ex.Message}");
-        }
-    }
-
-    private void OnMoveSizeStart(IntPtr hwnd)
-    {
-        if (IsOwnWindow(hwnd)) return;
-        if (!_filterService.ShouldManage(hwnd)) return;
-        if (!IsModifierPressed()) return;
-
-        _dragWindow = hwnd;
-        _isDragging = true;
-
+        bool mouseDown = IsKeyDown(User32.VK_LBUTTON);
         User32.GetCursorPos(out var cursor);
-        User32.GetWindowRect(hwnd, out var rect);
-        _dragStartX = cursor.X;
-        _dragStartY = cursor.Y;
-    }
 
-    private void OnLocationChange(IntPtr hwnd)
-    {
-        if (hwnd != _dragWindow) return;
+        if (!mouseDown)
+        {
+            if (_isDragging)
+            {
+                EndDrag(cursor);
+            }
+            _isDragging = false;
+            _dragStartedFired = false;
+            _dragWindow = IntPtr.Zero;
+            return;
+        }
 
-        User32.GetCursorPos(out var cursor);
-        User32.GetWindowRect(hwnd, out var rect);
+        if (!_isDragging)
+        {
+            // Check if user is starting a drag (mouse down + movement)
+            if (!IsModifierPressed()) return;
 
+            // Get window under cursor
+            var hwnd = WindowFromPoint(cursor);
+            if (hwnd == IntPtr.Zero) return;
+            if (!_filterService.ShouldManage(hwnd)) return;
+
+            // Start tracking
+            _isDragging = true;
+            _dragWindow = hwnd;
+            _dragStartX = cursor.X;
+            _dragStartY = cursor.Y;
+            _lastCursorX = cursor.X;
+            _lastCursorY = cursor.Y;
+            return;
+        }
+
+        // Already dragging — check for movement
         int movedX = Math.Abs(cursor.X - _dragStartX);
         int movedY = Math.Abs(cursor.Y - _dragStartY);
         int threshold = _config.DragThreshold;
 
         if (movedX >= threshold || movedY >= threshold)
         {
+            // Window might have changed during drag (cross-window drags are rare)
+            // Keep using the same _dragWindow
+
+            User32.GetWindowRect(_dragWindow, out var rect);
             int ww = rect.Right - rect.Left;
             int wh = rect.Bottom - rect.Top;
+
             var args = new WindowDragEventArgs
             {
-                WindowHandle = hwnd,
+                WindowHandle = _dragWindow,
                 CursorX = cursor.X,
                 CursorY = cursor.Y,
                 WindowX = rect.Left,
@@ -141,31 +128,31 @@ public class HookService : IDisposable
             if (!_dragStartedFired)
             {
                 _dragStartedFired = true;
-                _dispatcher.Invoke(() => DragStarted?.Invoke(this, args));
+                DragStarted?.Invoke(this, args);
             }
 
-            _dispatcher.BeginInvoke(() => DragMoved?.Invoke(this, args));
+            DragMoved?.Invoke(this, args);
         }
+
+        _lastCursorX = cursor.X;
+        _lastCursorY = cursor.Y;
     }
 
-    private void OnMoveSizeEnd(IntPtr hwnd)
+    private void EndDrag(User32.POINT cursor)
     {
-        if (hwnd != _dragWindow) return;
-
-        User32.GetCursorPos(out var cursor);
-        User32.GetWindowRect(hwnd, out var rect);
-
         int movedX = Math.Abs(cursor.X - _dragStartX);
         int movedY = Math.Abs(cursor.Y - _dragStartY);
         int threshold = _config.DragThreshold;
 
-        if (movedX >= threshold || movedY >= threshold)
+        if (movedX >= threshold || movedY >= threshold && _dragWindow != IntPtr.Zero)
         {
+            User32.GetWindowRect(_dragWindow, out var rect);
             int ww = rect.Right - rect.Left;
             int wh = rect.Bottom - rect.Top;
+
             var args = new WindowDragEventArgs
             {
-                WindowHandle = hwnd,
+                WindowHandle = _dragWindow,
                 CursorX = cursor.X,
                 CursorY = cursor.Y,
                 WindowX = rect.Left,
@@ -174,13 +161,12 @@ public class HookService : IDisposable
                 WindowHeight = wh
             };
 
-            _dispatcher.Invoke(() => DragEnded?.Invoke(this, args));
+            DragEnded?.Invoke(this, args);
         }
-
-        _isDragging = false;
-        _dragStartedFired = false;
-        _dragWindow = IntPtr.Zero;
     }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern IntPtr WindowFromPoint(User32.POINT point);
 
     private bool IsModifierPressed()
     {
@@ -203,21 +189,8 @@ public class HookService : IDisposable
         return (User32.GetAsyncKeyState(vk) & 0x8000) != 0;
     }
 
-    private bool IsOwnWindow(IntPtr hwnd)
-    {
-        // Avoid hooking our own overlay/main window
-        // This is a simple guard; will be refined later
-        return false;
-    }
-
     public void Dispose()
     {
-        if (_hook != IntPtr.Zero)
-        {
-            User32.UnhookWinEvent(_hook);
-            _hook = IntPtr.Zero;
-        }
-        _hookDelegate = null;
-        GC.SuppressFinalize(this);
+        _timer.Stop();
     }
 }

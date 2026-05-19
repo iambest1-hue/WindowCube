@@ -15,6 +15,7 @@ internal static class User32
     public const int VK_SHIFT = 0x10;
     public const int VK_CONTROL = 0x11;
     public const int VK_MENU = 0x12;
+    public const int VK_LBUTTON = 0x01;
 
     // Window styles
     public const int GWL_EXSTYLE = -20;
