@@ -59,6 +59,13 @@ public class HookService : IDisposable
             _hookDelegate,
             0, 0,
             User32.WINEVENT_INCONTEXT);
+
+        var logPath = System.IO.Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "WinLayout", "hook.log");
+        var dir = System.IO.Path.GetDirectoryName(logPath);
+        if (dir != null) System.IO.Directory.CreateDirectory(dir);
+        System.IO.File.WriteAllText(logPath, $"hook=0x{_hook:X} time={DateTime.Now:HH:mm:ss}");
     }
 
     private void WinEventCallback(IntPtr hWinEventHook, uint eventType,
