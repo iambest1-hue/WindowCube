@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Windows.Threading;
+using WinLayout.Models;
 using WinLayout.Native;
 
 namespace WinLayout.Services;
@@ -18,8 +19,8 @@ public class WindowDragEventArgs : EventArgs
 public class HookService : IDisposable
 {
     private readonly Dispatcher _dispatcher;
-    private readonly ConfigService _configService;
     private readonly WindowFilterService _filterService;
+    private readonly UserConfig _config;
     private IntPtr _hook;
     private User32.WinEventDelegate? _hookDelegate;
 
@@ -35,7 +36,7 @@ public class HookService : IDisposable
 
     public bool IsStackingKeyPressed()
     {
-        return IsKeyDown(GetVkForModifier(_configService.LoadConfig().StackingKey));
+        return IsKeyDown(GetVkForModifier(_config.StackingKey));
     }
 
     private static int GetVkForModifier(string key) => key switch
@@ -50,8 +51,8 @@ public class HookService : IDisposable
         WindowFilterService filterService)
     {
         _dispatcher = dispatcher;
-        _configService = configService;
         _filterService = filterService;
+        _config = configService.LoadConfig();
     }
 
     public void Start()
@@ -69,19 +70,26 @@ public class HookService : IDisposable
     private void WinEventCallback(IntPtr hWinEventHook, uint eventType,
         IntPtr hwnd, int idObject, int idChild, uint dwEventThread, uint dwmsEventTime)
     {
-        if (hwnd == IntPtr.Zero || idObject != 0) return;
+        try
+        {
+            if (hwnd == IntPtr.Zero || idObject != 0) return;
 
-        if (eventType == User32.EVENT_SYSTEM_MOVESIZESTART)
-        {
-            OnMoveSizeStart(hwnd);
+            if (eventType == User32.EVENT_SYSTEM_MOVESIZESTART)
+            {
+                OnMoveSizeStart(hwnd);
+            }
+            else if (_isDragging && eventType == User32.EVENT_OBJECT_LOCATIONCHANGE)
+            {
+                OnLocationChange(hwnd);
+            }
+            else if (eventType == User32.EVENT_SYSTEM_MOVESIZEEND)
+            {
+                OnMoveSizeEnd(hwnd);
+            }
         }
-        else if (_isDragging && eventType == User32.EVENT_OBJECT_LOCATIONCHANGE)
+        catch (Exception ex)
         {
-            OnLocationChange(hwnd);
-        }
-        else if (eventType == User32.EVENT_SYSTEM_MOVESIZEEND)
-        {
-            OnMoveSizeEnd(hwnd);
+            Debug.WriteLine($"[Hook] WinEventCallback error: {ex.Message}");
         }
     }
 
@@ -119,7 +127,7 @@ public class HookService : IDisposable
 
         int movedX = Math.Abs(cursor.X - _dragStartX);
         int movedY = Math.Abs(cursor.Y - _dragStartY);
-        int threshold = _configService.LoadConfig().DragThreshold;
+        int threshold = _config.DragThreshold;
 
         if (movedX >= threshold || movedY >= threshold)
         {
@@ -155,7 +163,7 @@ public class HookService : IDisposable
 
         int movedX = Math.Abs(cursor.X - _dragStartX);
         int movedY = Math.Abs(cursor.Y - _dragStartY);
-        int threshold = _configService.LoadConfig().DragThreshold;
+        int threshold = _config.DragThreshold;
 
         if (movedX >= threshold || movedY >= threshold)
         {
@@ -184,7 +192,7 @@ public class HookService : IDisposable
 
     private bool IsModifierPressed()
     {
-        string key = _configService.LoadConfig().ModifierKey;
+        string key = _config.ModifierKey;
         return key switch
         {
             "Shift" => IsKeyDown(User32.VK_SHIFT),

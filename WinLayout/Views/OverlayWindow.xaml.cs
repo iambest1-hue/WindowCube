@@ -113,9 +113,9 @@ public partial class OverlayWindow : Window
             }
         }
 
-        if (Visibility != Visibility.Visible)
-            Show();
-
+        // Always call Show() to ensure window is visible.
+        // Do not check Visibility — WPF default is Visible even when HWND doesn't exist.
+        Show();
         Topmost = true;
     }
 

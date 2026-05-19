@@ -12,11 +12,11 @@ public partial class MainWindow : Window
 {
     private readonly ConfigService _configService = new();
     private readonly LayoutService _layoutService;
+    private readonly MonitorService _monitorService;
+    private readonly OverlayService _overlayService;
     private readonly WindowManager _windowManager = new();
     private readonly WindowFilterService _filterService;
     private HookService? _hookService;
-    private OverlayService? _overlayService;
-    private MonitorService? _monitorService;
     private TrayService? _trayService;
     private VirtualDesktopService? _virtualDesktopService;
 
@@ -26,6 +26,8 @@ public partial class MainWindow : Window
 
         _layoutService = new LayoutService(_configService);
         _filterService = new WindowFilterService(_configService);
+        _monitorService = new MonitorService(_configService, _layoutService);
+        _overlayService = new OverlayService(_configService, _layoutService, _monitorService);
 
         _hookService = new HookService(Dispatcher, _configService, _filterService);
         _hookService.DragStarted += OnDragStarted;
@@ -39,11 +41,7 @@ public partial class MainWindow : Window
     private void OnSourceInitialized(object? sender, EventArgs e)
     {
         var handle = new WindowInteropHelper(this).Handle;
-
-        _monitorService = new MonitorService(_configService, _layoutService);
         _monitorService.Initialize(handle);
-
-        _overlayService = new OverlayService(_configService, _layoutService, _monitorService);
 
         _trayService = new TrayService(this, _layoutService, _monitorService, _configService);
         _trayService.OpenEditorRequested += (_, _) => OnOpenEditor(this, new RoutedEventArgs());
@@ -97,7 +95,7 @@ public partial class MainWindow : Window
         if (paused)
         {
             _hookService?.Dispose();
-            _overlayService?.Hide();
+            _overlayService.Hide();
         }
         else
         {

@@ -28,15 +28,13 @@ public class MonitorService
     {
         _configService = configService;
         _layoutService = layoutService;
+        EnumerateMonitors();
     }
 
     public void Initialize(IntPtr mainWindowHandle)
     {
-        // Listen for WM_DISPLAYCHANGE
         _hwndSource = HwndSource.FromHwnd(mainWindowHandle);
         _hwndSource?.AddHook(WndProc);
-
-        EnumerateMonitors();
     }
 
     private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
