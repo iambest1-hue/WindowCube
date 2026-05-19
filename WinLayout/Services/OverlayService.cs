@@ -52,6 +52,25 @@ public class OverlayService
         var zones = GetActiveZones();
         int highlightedIndex = GetZoneIndexAtCursor(cursorX, cursorY, bounds, zones);
 
+        // Cache the last valid snap target for use on DragEnded
+        if (highlightedIndex >= 0 && highlightedIndex < zones.Count)
+        {
+            var zone = zones[highlightedIndex];
+            _lastSnapTarget = new SnapTarget
+            {
+                ZoneIndex = highlightedIndex,
+                ScreenX = bounds.X,
+                ScreenY = bounds.Y,
+                ScreenWidth = bounds.Width,
+                ScreenHeight = bounds.Height,
+                ZoneLeft = zone.Left,
+                ZoneTop = zone.Top,
+                ZoneWidth = zone.Width,
+                ZoneHeight = zone.Height,
+                Padding = zone.Padding
+            };
+        }
+
         _overlayWindow.ShowOverlay(bounds.X, bounds.Y, bounds.Width, bounds.Height, zones, highlightedIndex);
     }
 
