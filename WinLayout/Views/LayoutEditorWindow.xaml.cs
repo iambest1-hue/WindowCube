@@ -236,9 +236,9 @@ public partial class LayoutEditorWindow : Window
         }
     }
 
-    protected override void OnMouseMove(MouseEventArgs e)
+    protected override void OnPreviewMouseMove(MouseEventArgs e)
     {
-        base.OnMouseMove(e);
+        base.OnPreviewMouseMove(e);
 
         if (_draggingSplitter == null) return;
 
@@ -276,9 +276,9 @@ public partial class LayoutEditorWindow : Window
         UpdateStatus(relX, relY);
     }
 
-    protected override void OnMouseUp(MouseButtonEventArgs e)
+    protected override void OnPreviewMouseUp(MouseButtonEventArgs e)
     {
-        base.OnMouseUp(e);
+        base.OnPreviewMouseUp(e);
 
         if (_draggingSplitter != null)
         {
