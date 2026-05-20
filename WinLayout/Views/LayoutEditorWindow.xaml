@@ -11,7 +11,8 @@
         </Grid.RowDefinitions>
 
         <!-- Toolbar -->
-        <ToolBar Grid.Row="0">
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="4"
+                    Background="#F5F5F5">
             <Label Content="名称:"/>
             <TextBox x:Name="LayoutNameBox" Width="120" Margin="2"/>
             <Separator/>
@@ -22,7 +23,7 @@
             <Button Content="新建" Click="OnNew" Margin="2"/>
             <Button Content="保存" Click="OnSave" Margin="2"/>
             <Button Content="删除" Click="OnDelete" Margin="2"/>
-        </ToolBar>
+        </StackPanel>
 
         <!-- Preview Canvas -->
         <Border Grid.Row="1" BorderBrush="Gray" BorderThickness="1" Margin="10"

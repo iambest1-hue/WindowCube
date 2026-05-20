@@ -17,6 +17,7 @@ public partial class LayoutEditorWindow : Window
     private readonly List<FrameworkElement> _zoneVisuals = new();
 
     private UIElement? _draggingSplitter;
+    private bool _isRendering;
     private bool _isHorizontalSplitter;
     private int _zoneA, _zoneB; // The two zones separated by this splitter
 
@@ -92,8 +93,12 @@ public partial class LayoutEditorWindow : Window
 
     private void RenderPreview()
     {
-        PreviewCanvas.Children.Clear();
-        _zoneVisuals.Clear();
+        if (_isRendering) return;
+        _isRendering = true;
+        try
+        {
+            PreviewCanvas.Children.Clear();
+            _zoneVisuals.Clear();
 
         double cw = PreviewCanvas.ActualWidth;
         double ch = PreviewCanvas.ActualHeight;
@@ -147,6 +152,8 @@ public partial class LayoutEditorWindow : Window
 
         // Draw splitters between zones
         DrawSplitters(cw, ch);
+        }
+        finally { _isRendering = false; }
     }
 
     private void DrawSplitters(double cw, double ch)
@@ -365,6 +372,7 @@ public partial class LayoutEditorWindow : Window
 
     private void OnCanvasSizeChanged(object sender, SizeChangedEventArgs e)
     {
+        if (_isRendering) return;
         if (PreviewCanvas.ActualWidth > 0 && PreviewCanvas.ActualHeight > 0)
             RenderPreview();
     }
