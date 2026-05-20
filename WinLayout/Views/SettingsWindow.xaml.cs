@@ -10,6 +10,9 @@ public partial class SettingsWindow : Window
     private readonly ConfigService _configService;
     private UserConfig _config;
 
+    /// <summary>Fired when settings are saved. Subscriber should reload config-dependent services.</summary>
+    public event Action? SettingsSaved;
+
     public SettingsWindow(ConfigService configService)
     {
         InitializeComponent();
@@ -17,93 +20,60 @@ public partial class SettingsWindow : Window
         _config = _configService.LoadConfig();
 
         LoadConfigToUI();
-        SetupBindings();
     }
 
     private void LoadConfigToUI()
     {
-        // Modifier key
-        var modIndex = _config.ModifierKey switch
+        ModifierKeyCombo.SelectedIndex = _config.ModifierKey switch
         {
             "None" => 0, "Shift" => 1, "Ctrl" => 2, "Alt" => 3,
             "Shift+Ctrl" => 4, "Shift+Alt" => 5, "Ctrl+Alt" => 6,
             _ => 0
         };
-        ModifierKeyCombo.SelectedIndex = modIndex;
 
-        // Stacking key
         StackingKeyCombo.SelectedIndex = _config.StackingKey switch
         {
             "Shift" => 0, "Ctrl" => 1, "Alt" => 2, _ => 1
         };
 
-        // Drag threshold
         DragThresholdSlider.Value = _config.DragThreshold;
         DragThresholdLabel.Text = $"{_config.DragThreshold}px";
-
-        // Min window size
-        MinWidthBox.Text = _config.MinWindowSize.Width.ToString();
-        MinHeightBox.Text = _config.MinWindowSize.Height.ToString();
-
-        // Highlight opacity
-        var opacityPct = (int)(_config.HighlightOpacity * 100);
-        HighlightOpacitySlider.Value = opacityPct;
-        HighlightOpacityLabel.Text = $"{opacityPct}%";
-
-        // Startup
-        RunAtStartupCheck.IsChecked = _config.RunAtStartup;
-
-        // Blacklist
-        BlacklistListBox.Items.Clear();
-        foreach (var proc in _config.BlacklistedProcesses)
-            BlacklistListBox.Items.Add(proc);
-
-        // Virtual desktop
-        PerDesktopLayoutCheck.IsChecked = _config.PerDesktopLayout;
-        AutoApplyOnSwitchCheck.IsChecked = _config.AutoApplyOnDesktopSwitch;
-    }
-
-    private void SetupBindings()
-    {
-        ModifierKeyCombo.SelectionChanged += (_, _) => SaveConfig();
-        StackingKeyCombo.SelectionChanged += (_, _) => SaveConfig();
         DragThresholdSlider.ValueChanged += (_, _) =>
         {
             _config.DragThreshold = (int)DragThresholdSlider.Value;
             DragThresholdLabel.Text = $"{_config.DragThreshold}px";
-            SaveConfig();
         };
+
+        HighlightOpacitySlider.Value = (int)(_config.HighlightOpacity * 100);
+        HighlightOpacityLabel.Text = $"{(int)HighlightOpacitySlider.Value}%";
         HighlightOpacitySlider.ValueChanged += (_, _) =>
         {
             _config.HighlightOpacity = HighlightOpacitySlider.Value / 100.0;
             HighlightOpacityLabel.Text = $"{(int)HighlightOpacitySlider.Value}%";
-            SaveConfig();
         };
+
+        MinWidthBox.Text = _config.MinWindowSize.Width.ToString();
         MinWidthBox.TextChanged += (_, _) =>
         {
-            if (int.TryParse(MinWidthBox.Text, out int v))
-            {
-                _config.MinWindowSize.Width = v;
-                SaveConfig();
-            }
+            if (int.TryParse(MinWidthBox.Text, out int v)) _config.MinWindowSize.Width = v;
         };
+        MinHeightBox.Text = _config.MinWindowSize.Height.ToString();
         MinHeightBox.TextChanged += (_, _) =>
         {
-            if (int.TryParse(MinHeightBox.Text, out int v))
-            {
-                _config.MinWindowSize.Height = v;
-                SaveConfig();
-            }
+            if (int.TryParse(MinHeightBox.Text, out int v)) _config.MinWindowSize.Height = v;
         };
-        RunAtStartupCheck.Checked += (_, _) => { _config.RunAtStartup = true; SaveConfig(); App.SetStartup(true); };
-        RunAtStartupCheck.Unchecked += (_, _) => { _config.RunAtStartup = false; SaveConfig(); App.SetStartup(false); };
-        PerDesktopLayoutCheck.Checked += (_, _) => { _config.PerDesktopLayout = true; SaveConfig(); };
-        PerDesktopLayoutCheck.Unchecked += (_, _) => { _config.PerDesktopLayout = false; SaveConfig(); };
-        AutoApplyOnSwitchCheck.Checked += (_, _) => { _config.AutoApplyOnDesktopSwitch = true; SaveConfig(); };
-        AutoApplyOnSwitchCheck.Unchecked += (_, _) => { _config.AutoApplyOnDesktopSwitch = false; SaveConfig(); };
+
+        RunAtStartupCheck.IsChecked = _config.RunAtStartup;
+
+        BlacklistListBox.Items.Clear();
+        foreach (var proc in _config.BlacklistedProcesses)
+            BlacklistListBox.Items.Add(proc);
+
+        PerDesktopLayoutCheck.IsChecked = _config.PerDesktopLayout;
+        AutoApplyOnSwitchCheck.IsChecked = _config.AutoApplyOnDesktopSwitch;
     }
 
-    private void SaveConfig()
+    private void CollectChanges()
     {
         _config.ModifierKey = ModifierKeyCombo.SelectedIndex switch
         {
@@ -115,8 +85,25 @@ public partial class SettingsWindow : Window
         {
             0 => "Shift", 1 => "Ctrl", 2 => "Alt", _ => "Ctrl"
         };
+        _config.RunAtStartup = RunAtStartupCheck.IsChecked == true;
+        _config.PerDesktopLayout = PerDesktopLayoutCheck.IsChecked == true;
+        _config.AutoApplyOnDesktopSwitch = AutoApplyOnSwitchCheck.IsChecked == true;
+    }
 
+    private void OnSaveClose(object sender, RoutedEventArgs e)
+    {
+        CollectChanges();
         _configService.SaveConfig(_config);
+        App.SetStartup(_config.RunAtStartup);
+        SettingsSaved?.Invoke();
+        DialogResult = true;
+        Close();
+    }
+
+    private void OnCancel(object sender, RoutedEventArgs e)
+    {
+        DialogResult = false;
+        Close();
     }
 
     private void OnAddBlacklist(object sender, RoutedEventArgs e)
@@ -124,10 +111,8 @@ public partial class SettingsWindow : Window
         var proc = BlacklistAddBox.Text.Trim();
         if (string.IsNullOrEmpty(proc) || _config.BlacklistedProcesses.Contains(proc))
             return;
-
         _config.BlacklistedProcesses.Add(proc);
         BlacklistListBox.Items.Add(proc);
-        SaveConfig();
     }
 
     private void OnRemoveBlacklist(object sender, RoutedEventArgs e)
@@ -136,7 +121,6 @@ public partial class SettingsWindow : Window
         {
             _config.BlacklistedProcesses.Remove(proc);
             BlacklistListBox.Items.Remove(proc);
-            SaveConfig();
         }
     }
 }

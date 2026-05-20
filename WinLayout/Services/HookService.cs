@@ -44,8 +44,7 @@ public class HookService : IDisposable
         _ => User32.VK_CONTROL
     };
 
-    public HookService(Dispatcher dispatcher, ConfigService configService,
-        WindowFilterService filterService)
+    public HookService(ConfigService configService, WindowFilterService filterService)
     {
         _filterService = filterService;
         _config = configService.LoadConfig();
