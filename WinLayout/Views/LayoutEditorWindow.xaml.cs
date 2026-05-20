@@ -19,7 +19,8 @@ public partial class LayoutEditorWindow : Window
     private UIElement? _draggingSplitter;
     private bool _isRendering;
     private bool _isHorizontalSplitter;
-    private int _zoneA, _zoneB; // The two zones separated by this splitter
+    private bool _suppressTemplateChanged;
+    private int _zoneA, _zoneB;
 
     public LayoutEditorWindow(LayoutService layoutService, ConfigService configService)
     {
@@ -30,25 +31,16 @@ public partial class LayoutEditorWindow : Window
         AddHandler(PreviewMouseMoveEvent, (MouseEventHandler)OnDragMouseMove, handledEventsToo: true);
         AddHandler(PreviewMouseLeftButtonUpEvent, (MouseButtonEventHandler)OnDragMouseUp, handledEventsToo: true);
 
-        TemplateCombo.DropDownOpened += (_, _) => DiagLog("DROP OPEN");
-        TemplateCombo.DropDownClosed += (_, _) => DiagLog("DROP CLOSE");
-
         LoadTemplates();
         LoadCurrentLayout();
     }
 
-    private static void DiagLog(string msg)
-    {
-        var path = System.IO.Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "WinLayout", "combo.log");
-        System.IO.File.AppendAllText(path, $"{DateTime.Now:HH:mm:ss.fff} {msg}\n");
-    }
-
     private void LoadTemplates()
     {
+        _suppressTemplateChanged = true;
         TemplateCombo.ItemsSource = PresetTemplates.All;
         TemplateCombo.SelectedIndex = 0;
+        _suppressTemplateChanged = false;
     }
 
     private void LoadCurrentLayout()
@@ -96,7 +88,6 @@ public partial class LayoutEditorWindow : Window
 
     private void RenderPreview()
     {
-        DiagLog($"RENDER isRendering={_isRendering}");
         if (_isRendering) return;
         _isRendering = true;
         try
@@ -241,7 +232,26 @@ public partial class LayoutEditorWindow : Window
         return null;
     }
 
-    private int _diagDownCount;
+    private void OnTemplateSelected(object sender, SelectionChangedEventArgs e)
+    {
+        if (_suppressTemplateChanged) return;
+        if (TemplateCombo.SelectedItem is PresetTemplate template)
+        {
+            var t = template;
+            Dispatcher.BeginInvoke(() =>
+            {
+                _zones = t.Zones.Select(z => new ZoneDefinition
+                {
+                    Index = z.Index, Left = z.Left, Top = z.Top,
+                    Width = z.Width, Height = z.Height, Padding = z.Padding
+                }).ToList();
+                LayoutNameBox.Text = t.Name;
+                _currentLayout = null;
+                RenderPreview();
+                StatusText.Text = $"已选用模板: {t.Name}（调整后请保存）";
+            });
+        }
+    }
 
     private void OnSplitterMouseDown(object sender, MouseButtonEventArgs e)
     {
@@ -303,14 +313,6 @@ public partial class LayoutEditorWindow : Window
         StatusText.Text = _isHorizontalSplitter
             ? $"区域{_zoneA + 1}: {(int)(_zones[_zoneA].Height * 100)}% / 区域{_zoneB + 1}: {(int)(_zones[_zoneB].Height * 100)}%"
             : $"区域{_zoneA + 1}: {(int)(_zones[_zoneA].Width * 100)}% / 区域{_zoneB + 1}: {(int)(_zones[_zoneB].Width * 100)}%";
-    }
-
-    private void OnApplyTemplate(object sender, RoutedEventArgs e)
-    {
-        if (TemplateCombo.SelectedItem is PresetTemplate template)
-        {
-            LoadPreset(template);
-        }
     }
 
     private void OnNew(object sender, RoutedEventArgs e)

@@ -56,16 +56,11 @@ public class LayoutService
     {
         _config.SaveLayout(layout);
 
-        // Update active layout if not set
         var config = _config.LoadConfig();
         if (!config.ScreenLayouts.ContainsKey("default"))
-        {
-            config.ScreenLayouts["default"] = new ScreenLayoutConfig
-            {
-                ActiveLayoutId = layout.LayoutId
-            };
-            _config.SaveConfig(config);
-        }
+            config.ScreenLayouts["default"] = new ScreenLayoutConfig();
+        config.ScreenLayouts["default"].ActiveLayoutId = layout.LayoutId;
+        _config.SaveConfig(config);
     }
 
     public void SetActive(string layoutId)
