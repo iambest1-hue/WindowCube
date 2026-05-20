@@ -33,14 +33,18 @@ public partial class LayoutEditorWindow : Window
         LoadCurrentLayout();
     }
 
+    private bool _suppressTemplateChanged;
+
     private void LoadTemplates()
     {
+        _suppressTemplateChanged = true;
         TemplateCombo.ItemsSource = null;
         TemplateCombo.Items.Clear();
         TemplateCombo.Items.Add("-- 选择模板 --");
         foreach (var t in PresetTemplates.All)
             TemplateCombo.Items.Add(t);
         TemplateCombo.SelectedIndex = 0;
+        _suppressTemplateChanged = false;
     }
 
     private void LoadCurrentLayout()
@@ -289,6 +293,7 @@ public partial class LayoutEditorWindow : Window
 
     private void OnTemplateSelected(object sender, SelectionChangedEventArgs e)
     {
+        if (_suppressTemplateChanged) return;
         if (TemplateCombo.SelectedItem is PresetTemplate template)
         {
             LoadPreset(template);
