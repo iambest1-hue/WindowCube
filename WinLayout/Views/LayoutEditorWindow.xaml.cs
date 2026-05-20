@@ -34,14 +34,10 @@ public partial class LayoutEditorWindow : Window
         LoadCurrentLayout();
     }
 
-    private bool _suppressTemplateChanged;
-
     private void LoadTemplates()
     {
-        _suppressTemplateChanged = true;
         TemplateCombo.ItemsSource = PresetTemplates.All;
         TemplateCombo.SelectedIndex = 0;
-        _suppressTemplateChanged = false;
     }
 
     private void LoadCurrentLayout()
@@ -294,9 +290,8 @@ public partial class LayoutEditorWindow : Window
             : $"区域{_zoneA + 1}: {(int)(_zones[_zoneA].Width * 100)}% / 区域{_zoneB + 1}: {(int)(_zones[_zoneB].Width * 100)}%";
     }
 
-    private void OnTemplateSelected(object sender, SelectionChangedEventArgs e)
+    private void OnApplyTemplate(object sender, RoutedEventArgs e)
     {
-        if (_suppressTemplateChanged) return;
         if (TemplateCombo.SelectedItem is PresetTemplate template)
         {
             LoadPreset(template);
