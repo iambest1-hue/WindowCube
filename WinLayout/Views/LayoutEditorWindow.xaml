@@ -18,6 +18,7 @@
             <Separator/>
             <Label Content="模板:"/>
             <ComboBox x:Name="TemplateCombo" Width="140" Margin="2"
+                      DisplayMemberPath="Name"
                       SelectionChanged="OnTemplateSelected"/>
             <Separator/>
             <Button Content="新建" Click="OnNew" Margin="2"/>

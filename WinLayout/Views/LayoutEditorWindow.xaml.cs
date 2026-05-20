@@ -39,11 +39,7 @@ public partial class LayoutEditorWindow : Window
     private void LoadTemplates()
     {
         _suppressTemplateChanged = true;
-        TemplateCombo.ItemsSource = null;
-        TemplateCombo.Items.Clear();
-        TemplateCombo.Items.Add("-- 选择模板 --");
-        foreach (var t in PresetTemplates.All)
-            TemplateCombo.Items.Add(t);
+        TemplateCombo.ItemsSource = PresetTemplates.All;
         TemplateCombo.SelectedIndex = 0;
         _suppressTemplateChanged = false;
     }
