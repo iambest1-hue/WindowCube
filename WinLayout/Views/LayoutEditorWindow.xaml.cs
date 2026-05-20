@@ -226,6 +226,8 @@ public partial class LayoutEditorWindow : Window
         return null;
     }
 
+    private int _diagDownCount;
+
     private void OnSplitterMouseDown(object sender, MouseButtonEventArgs e)
     {
         if (sender is Rectangle splitter && splitter.Tag is (int i, int j, bool isH))
@@ -235,6 +237,13 @@ public partial class LayoutEditorWindow : Window
             _zoneB = j;
             _isHorizontalSplitter = isH;
             e.Handled = true;
+
+            _diagDownCount++;
+            var diagPath = System.IO.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "WinLayout", "editor_down.log");
+            System.IO.File.WriteAllText(diagPath,
+                $"DOWN #{_diagDownCount} at {DateTime.Now:HH:mm:ss.fff} zones=({i},{j})");
         }
     }
 
@@ -272,6 +281,10 @@ public partial class LayoutEditorWindow : Window
 
     private void OnDragMouseUp(object sender, MouseButtonEventArgs e)
     {
+        var diagPath = System.IO.Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "WinLayout", "editor_up.log");
+        System.IO.File.WriteAllText(diagPath, $"UP fired at {DateTime.Now:HH:mm:ss.fff} dragging={_draggingSplitter != null}");
         _draggingSplitter = null;
     }
 
