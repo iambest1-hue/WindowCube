@@ -30,8 +30,19 @@ public partial class LayoutEditorWindow : Window
         AddHandler(PreviewMouseMoveEvent, (MouseEventHandler)OnDragMouseMove, handledEventsToo: true);
         AddHandler(PreviewMouseLeftButtonUpEvent, (MouseButtonEventHandler)OnDragMouseUp, handledEventsToo: true);
 
+        TemplateCombo.DropDownOpened += (_, _) => DiagLog("DROP OPEN");
+        TemplateCombo.DropDownClosed += (_, _) => DiagLog("DROP CLOSE");
+
         LoadTemplates();
         LoadCurrentLayout();
+    }
+
+    private static void DiagLog(string msg)
+    {
+        var path = System.IO.Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "WinLayout", "combo.log");
+        System.IO.File.AppendAllText(path, $"{DateTime.Now:HH:mm:ss.fff} {msg}\n");
     }
 
     private void LoadTemplates()
@@ -85,6 +96,7 @@ public partial class LayoutEditorWindow : Window
 
     private void RenderPreview()
     {
+        DiagLog($"RENDER isRendering={_isRendering}");
         if (_isRendering) return;
         _isRendering = true;
         try
@@ -279,8 +291,11 @@ public partial class LayoutEditorWindow : Window
 
     private void OnDragMouseUp(object sender, MouseButtonEventArgs e)
     {
-        Mouse.Capture(null);
-        _draggingSplitter = null;
+        if (_draggingSplitter != null)
+        {
+            Mouse.Capture(null);
+            _draggingSplitter = null;
+        }
     }
 
     private void UpdateStatus(double relX, double relY)
