@@ -26,8 +26,8 @@ public partial class LayoutEditorWindow : Window
         _layoutService = layoutService;
         _configService = configService;
 
-        PreviewMouseMove += OnDragMouseMove;
-        PreviewMouseLeftButtonUp += OnDragMouseUp;
+        AddHandler(PreviewMouseMoveEvent, (MouseEventHandler)OnDragMouseMove, handledEventsToo: true);
+        AddHandler(PreviewMouseLeftButtonUpEvent, (MouseButtonEventHandler)OnDragMouseUp, handledEventsToo: true);
 
         LoadTemplates();
         LoadCurrentLayout();
