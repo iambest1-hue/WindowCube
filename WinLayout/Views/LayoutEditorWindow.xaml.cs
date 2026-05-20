@@ -236,20 +236,15 @@ public partial class LayoutEditorWindow : Window
             _zoneA = i;
             _zoneB = j;
             _isHorizontalSplitter = isH;
+            Mouse.Capture(PreviewCanvas, CaptureMode.SubTree);
             e.Handled = true;
-
-            _diagDownCount++;
-            var diagPath = System.IO.Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "WinLayout", "editor_down.log");
-            System.IO.File.WriteAllText(diagPath,
-                $"DOWN #{_diagDownCount} at {DateTime.Now:HH:mm:ss.fff} zones=({i},{j})");
         }
     }
 
     private void OnDragMouseMove(object sender, MouseEventArgs e)
     {
         if (_draggingSplitter == null) return;
+        if (e.LeftButton != MouseButtonState.Pressed) return;
 
         var pos = e.GetPosition(PreviewCanvas);
         double relX = Math.Clamp(pos.X / PreviewCanvas.ActualWidth, 0.05, 0.95);
@@ -281,10 +276,7 @@ public partial class LayoutEditorWindow : Window
 
     private void OnDragMouseUp(object sender, MouseButtonEventArgs e)
     {
-        var diagPath = System.IO.Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "WinLayout", "editor_up.log");
-        System.IO.File.WriteAllText(diagPath, $"UP fired at {DateTime.Now:HH:mm:ss.fff} dragging={_draggingSplitter != null}");
+        Mouse.Capture(null);
         _draggingSplitter = null;
     }
 
