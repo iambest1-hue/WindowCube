@@ -12,9 +12,10 @@ public partial class OverlayWindow : Window
     private Rectangle? _dimBackground;
     private readonly List<UIElement> _zoneElements = new();
 
-    // Configurable colors — pulled from UserConfig later
-    private static readonly Color DimColor = Color.FromArgb(128, 0, 0, 0);       // 50% black
-    private static readonly Color HighlightColor = Color.FromArgb(90, 0, 120, 215); // ~35% system blue
+    // Configurable colors
+    private static readonly Color DimColor    = Color.FromArgb(140, 0, 0, 0);   // ~55% black background
+    private static readonly Color ZoneColor   = Color.FromArgb(60, 255, 255, 255); // ~25% white — visible zones
+    private static readonly Color HighlightColor = Color.FromArgb(90, 0, 120, 215); // ~35% accent blue
     private static readonly Color HighlightBorderColor = Color.FromArgb(255, 0, 120, 215);
 
     public OverlayWindow()
@@ -98,29 +99,15 @@ public partial class OverlayWindow : Window
                 Canvas.SetTop(highlightRect, y);
                 OverlayCanvas.Children.Add(highlightRect);
                 _zoneElements.Add(highlightRect);
-
-                // Zone label
-                var label = new TextBlock
-                {
-                    Text = $"{zone.Index}",
-                    FontSize = 48,
-                    FontWeight = FontWeights.Bold,
-                    Foreground = new SolidColorBrush(Color.FromArgb(180, 255, 255, 255)),
-                    IsHitTestVisible = false
-                };
-                Canvas.SetLeft(label, x + w / 2 - 20);
-                Canvas.SetTop(label, y + h / 2 - 30);
-                OverlayCanvas.Children.Add(label);
-                _zoneElements.Add(label);
             }
             else
             {
-                // Non-highlighted: black dim
+                // Non-highlighted zone: light semi-transparent
                 var dimRect = new Rectangle
                 {
                     Width = w,
                     Height = h,
-                    Fill = new SolidColorBrush(DimColor),
+                    Fill = new SolidColorBrush(ZoneColor),
                     IsHitTestVisible = false
                 };
                 Canvas.SetLeft(dimRect, x);
@@ -128,6 +115,74 @@ public partial class OverlayWindow : Window
                 OverlayCanvas.Children.Add(dimRect);
                 _zoneElements.Add(dimRect);
             }
+
+            // Zone label — different color per zone
+            var labelColors = new[]
+            {
+                Color.FromRgb(255, 100, 100),  // red
+                Color.FromRgb(100, 255, 100),  // green
+                Color.FromRgb(100, 180, 255),  // blue
+                Color.FromRgb(255, 220, 80),   // yellow
+                Color.FromRgb(200, 120, 255),  // purple
+                Color.FromRgb(100, 255, 220),  // teal
+            };
+            var labelColor = labelColors[i % labelColors.Length];
+            var label = new TextBlock
+            {
+                Text = $"{zone.Index}",
+                FontSize = 48,
+                FontWeight = FontWeights.Bold,
+                Foreground = new SolidColorBrush(labelColor),
+                IsHitTestVisible = false
+            };
+            Canvas.SetLeft(label, x + w / 2 - 20);
+            Canvas.SetTop(label, y + h / 2 - 30);
+            OverlayCanvas.Children.Add(label);
+            _zoneElements.Add(label);
+        }
+
+        // Draw zone boundary lines — bright white
+        var lineColor = Color.FromArgb(200, 255, 255, 255);
+        var lineBrush = new SolidColorBrush(lineColor);
+
+        // Collect unique X positions for vertical lines (exclude screen edges 0 and 1)
+        var vertLines = new HashSet<double>();
+        var horizLines = new HashSet<double>();
+        foreach (var z in zones)
+        {
+            if (z.Left > 0.001) vertLines.Add(z.Left);
+            if (z.Top > 0.001) horizLines.Add(z.Top);
+            double right = z.Left + z.Width;
+            double bottom = z.Top + z.Height;
+            if (right < 0.999) vertLines.Add(right);
+            if (bottom < 0.999) horizLines.Add(bottom);
+        }
+
+        foreach (var vx in vertLines)
+        {
+            var line = new Rectangle
+            {
+                Width = 1,
+                Height = ch,
+                Fill = lineBrush,
+                IsHitTestVisible = false
+            };
+            Canvas.SetLeft(line, vx * cw);
+            Canvas.SetTop(line, 0);
+            OverlayCanvas.Children.Add(line);
+        }
+        foreach (var hy in horizLines)
+        {
+            var line = new Rectangle
+            {
+                Width = cw,
+                Height = 1,
+                Fill = lineBrush,
+                IsHitTestVisible = false
+            };
+            Canvas.SetLeft(line, 0);
+            Canvas.SetTop(line, hy * ch);
+            OverlayCanvas.Children.Add(line);
         }
 
         // Always call Show() to ensure window is visible.

@@ -17,6 +17,12 @@ internal static class User32
     public const int VK_MENU = 0x12;
     public const int VK_LBUTTON = 0x01;
 
+    public const int WM_NCHITTEST = 0x0084;
+    public const int HTCAPTION = 2;
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+
     public const uint GA_ROOT = 2;
 
     [DllImport("user32.dll")]

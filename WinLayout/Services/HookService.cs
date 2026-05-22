@@ -91,6 +91,11 @@ public class HookService : IDisposable
             if (hwnd == IntPtr.Zero) return;
             if (!_filterService.ShouldManage(hwnd)) return;
 
+            // Only trigger on actual window dragging (title bar), not any mouse drag
+            var lParam = (IntPtr)(cursor.Y << 16 | (cursor.X & 0xFFFF));
+            var hit = User32.SendMessage(hwnd, User32.WM_NCHITTEST, IntPtr.Zero, lParam);
+            if ((int)hit != User32.HTCAPTION) return;
+
             // Start tracking
             _isDragging = true;
             _dragWindow = hwnd;
