@@ -92,6 +92,7 @@ public partial class MainWindow : Window
     {
         var settings = new SettingsWindow(_configService);
         settings.Owner = this;
+        settings.Topmost = true;
         settings.SettingsSaved += () =>
         {
             ReloadHookService();
