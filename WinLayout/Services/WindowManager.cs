@@ -42,23 +42,34 @@ public class WindowManager
                 if (stacking)
                 {
                     StackWindowsInZone(hwnd, existingHwnd, target);
-                    _zoneOccupancy[key] = hwnd; // Replace with new primary
+                    _zoneOccupancy[key] = hwnd;
                     LastSnapTarget = target;
                     return;
                 }
                 else
                 {
-                    // Displace the existing window
                     DisplaceWindow(existingHwnd, target);
                 }
             }
         }
 
-        // Calculate pixel position
-        int x = target.ScreenX + (int)(target.ZoneLeft * target.ScreenWidth) + target.Padding;
-        int y = target.ScreenY + (int)(target.ZoneTop * target.ScreenHeight) + target.Padding;
-        int w = (int)(target.ZoneWidth * target.ScreenWidth) - target.Padding * 2;
-        int h = (int)(target.ZoneHeight * target.ScreenHeight) - target.Padding * 2;
+        // Get invisible border offset (DWM extends window frame)
+        int borderLeft = 0, borderTop = 0, borderRight = 0, borderBottom = 0;
+        if (DwmApi.DwmGetWindowAttribute(hwnd, DwmApi.DWMWA_EXTENDED_FRAME_BOUNDS,
+            out var extBounds, Marshal.SizeOf<DwmApi.RECT>()) == 0)
+        {
+            User32.GetWindowRect(hwnd, out var wr);
+            borderLeft = extBounds.Left - wr.Left;
+            borderTop = extBounds.Top - wr.Top;
+            borderRight = wr.Right - extBounds.Right;
+            borderBottom = wr.Bottom - extBounds.Bottom;
+        }
+
+        // Calculate pixel position, compensating for invisible borders
+        int x = target.ScreenX + (int)(target.ZoneLeft * target.ScreenWidth) + target.Padding - borderLeft;
+        int y = target.ScreenY + (int)(target.ZoneTop * target.ScreenHeight) + target.Padding - borderTop;
+        int w = (int)(target.ZoneWidth * target.ScreenWidth) - target.Padding * 2 + borderLeft + borderRight;
+        int h = (int)(target.ZoneHeight * target.ScreenHeight) - target.Padding * 2 + borderTop + borderBottom;
 
         User32.SetWindowPos(
             hwnd,
@@ -69,7 +80,7 @@ public class WindowManager
         _zoneOccupancy[key] = hwnd;
         LastSnapTarget = target;
 
-        Debug.WriteLine($"[WindowManager] Snapped 0x{hwnd:X} to zone {target.ZoneIndex} @ ({x},{y}) {w}x{h}");
+        Debug.WriteLine($"[WindowManager] Snapped 0x{hwnd:X} to zone {target.ZoneIndex} @ ({x},{y}) {w}x{h} border=({borderLeft},{borderTop},{borderRight},{borderBottom})");
     }
 
     private void StackWindowsInZone(IntPtr hwnd1, IntPtr hwnd2, SnapTarget target)
