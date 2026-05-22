@@ -12,6 +12,8 @@ public static class PresetTemplates
         new("2×2 网格", CreateTwoByTwo()),
         new("主窗+右侧两小窗", CreateMainWithTwoRight()),
         new("主窗+底部两小窗", CreateMainWithTwoBottom()),
+        new("五等分", CreateFiveColumn()),
+        new("六等分", CreateSixColumn()),
     };
 
     private static List<ZoneDefinition> CreateLeftRightSplit() => new()
@@ -61,6 +63,25 @@ public static class PresetTemplates
         new() { Index = 1, Left = 0.0, Top = 0.0, Width = 1.0, Height = 0.6 },
         new() { Index = 2, Left = 0.0, Top = 0.6, Width = 0.5, Height = 0.4 },
         new() { Index = 3, Left = 0.5, Top = 0.6, Width = 0.5, Height = 0.4 },
+    };
+
+    private static List<ZoneDefinition> CreateFiveColumn() => new()
+    {
+        new() { Index = 1, Left = 0.0, Top = 0.0, Width = 0.2, Height = 1.0 },
+        new() { Index = 2, Left = 0.2, Top = 0.0, Width = 0.2, Height = 1.0 },
+        new() { Index = 3, Left = 0.4, Top = 0.0, Width = 0.2, Height = 1.0 },
+        new() { Index = 4, Left = 0.6, Top = 0.0, Width = 0.2, Height = 1.0 },
+        new() { Index = 5, Left = 0.8, Top = 0.0, Width = 0.2, Height = 1.0 },
+    };
+
+    private static List<ZoneDefinition> CreateSixColumn() => new()
+    {
+        new() { Index = 1, Left = 0.0, Top = 0.0, Width = 1.0 / 6, Height = 1.0 },
+        new() { Index = 2, Left = 1.0 / 6, Top = 0.0, Width = 1.0 / 6, Height = 1.0 },
+        new() { Index = 3, Left = 2.0 / 6, Top = 0.0, Width = 1.0 / 6, Height = 1.0 },
+        new() { Index = 4, Left = 3.0 / 6, Top = 0.0, Width = 1.0 / 6, Height = 1.0 },
+        new() { Index = 5, Left = 4.0 / 6, Top = 0.0, Width = 1.0 / 6, Height = 1.0 },
+        new() { Index = 6, Left = 5.0 / 6, Top = 0.0, Width = 1.0 / 6, Height = 1.0 },
     };
 }
 
