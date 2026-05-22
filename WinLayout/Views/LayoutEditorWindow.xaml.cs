@@ -19,7 +19,7 @@ public partial class LayoutEditorWindow : Window
     private UIElement? _draggingSplitter;
     private bool _isRendering;
     private bool _isHorizontalSplitter;
-    private bool _suppressTemplateChanged;
+    private bool _suppressLayoutChanged;
     private int _zoneA, _zoneB;
 
     public LayoutEditorWindow(LayoutService layoutService, ConfigService configService)
@@ -31,59 +31,62 @@ public partial class LayoutEditorWindow : Window
         AddHandler(PreviewMouseMoveEvent, (MouseEventHandler)OnDragMouseMove, handledEventsToo: true);
         AddHandler(PreviewMouseLeftButtonUpEvent, (MouseButtonEventHandler)OnDragMouseUp, handledEventsToo: true);
 
-        LoadTemplates();
+        RefreshLayoutList();
         LoadCurrentLayout();
     }
 
-    private void LoadTemplates()
+    private void RefreshLayoutList()
     {
-        _suppressTemplateChanged = true;
-        TemplateCombo.ItemsSource = PresetTemplates.All;
-        TemplateCombo.SelectedIndex = 0;
-        _suppressTemplateChanged = false;
+        _suppressLayoutChanged = true;
+        var layouts = _layoutService.GetAllLayouts();
+        LayoutCombo.ItemsSource = layouts;
+        _suppressLayoutChanged = false;
     }
 
     private void LoadCurrentLayout()
     {
         var layout = _layoutService.GetActiveLayout();
         if (layout != null)
-            LoadLayout(layout);
-        else
-            LoadPreset(PresetTemplates.All[0]);
-    }
-
-    private void LoadLayout(LayoutDefinition layout)
-    {
-        _currentLayout = layout;
-        _zones = layout.Zones.Select(z => new ZoneDefinition
         {
-            Index = z.Index,
-            Left = z.Left,
-            Top = z.Top,
-            Width = z.Width,
-            Height = z.Height,
-            Padding = z.Padding
-        }).ToList();
+            _currentLayout = layout;
+            _zones = layout.Zones.Select(z => new ZoneDefinition
+            {
+                Index = z.Index, Left = z.Left, Top = z.Top,
+                Width = z.Width, Height = z.Height, Padding = z.Padding
+            }).ToList();
+            LayoutNameBox.Text = layout.Name;
+            RenderPreview();
 
-        LayoutNameBox.Text = layout.Name;
-        RenderPreview();
+            // Select matching item in combo
+            _suppressLayoutChanged = true;
+            for (int i = 0; i < LayoutCombo.Items.Count; i++)
+            {
+                if (LayoutCombo.Items[i] is LayoutDefinition l && l.LayoutId == layout.LayoutId)
+                {
+                    LayoutCombo.SelectedIndex = i;
+                    break;
+                }
+            }
+            _suppressLayoutChanged = false;
+            StatusText.Text = $"已加载: {layout.Name}";
+        }
+        else
+        {
+            LoadPreset(PresetTemplates.All[0]);
+        }
     }
 
     private void LoadPreset(PresetTemplate template)
     {
         _zones = template.Zones.Select(z => new ZoneDefinition
         {
-            Index = z.Index,
-            Left = z.Left,
-            Top = z.Top,
-            Width = z.Width,
-            Height = z.Height,
-            Padding = z.Padding
+            Index = z.Index, Left = z.Left, Top = z.Top,
+            Width = z.Width, Height = z.Height, Padding = z.Padding
         }).ToList();
-
         LayoutNameBox.Text = template.Name;
         _currentLayout = null;
         RenderPreview();
+        StatusText.Text = $"模板: {template.Name}（请修改后保存）";
     }
 
     private void RenderPreview()
@@ -95,58 +98,53 @@ public partial class LayoutEditorWindow : Window
             PreviewCanvas.Children.Clear();
             _zoneVisuals.Clear();
 
-        double cw = PreviewCanvas.ActualWidth;
-        double ch = PreviewCanvas.ActualHeight;
+            double cw = PreviewCanvas.ActualWidth;
+            double ch = PreviewCanvas.ActualHeight;
+            if (cw <= 0 || ch <= 0) return;
 
-        if (cw <= 0 || ch <= 0) return;
-
-        var colors = new[]
-        {
-            Color.FromArgb(80, 66, 133, 244),
-            Color.FromArgb(80, 52, 168, 83),
-            Color.FromArgb(80, 251, 188, 4),
-            Color.FromArgb(80, 234, 67, 53),
-            Color.FromArgb(80, 142, 68, 173),
-        };
-
-        // Draw zones
-        for (int i = 0; i < _zones.Count; i++)
-        {
-            var z = _zones[i];
-            int x = (int)(z.Left * cw);
-            int y = (int)(z.Top * ch);
-            int w = (int)(z.Width * cw);
-            int h = (int)(z.Height * ch);
-
-            var rect = new Rectangle
+            var colors = new[]
             {
-                Width = w,
-                Height = h,
-                Fill = new SolidColorBrush(colors[i % colors.Length]),
-                Stroke = new SolidColorBrush(Colors.Gray),
-                StrokeThickness = 1
+                Color.FromArgb(80, 66, 133, 244),
+                Color.FromArgb(80, 52, 168, 83),
+                Color.FromArgb(80, 251, 188, 4),
+                Color.FromArgb(80, 234, 67, 53),
+                Color.FromArgb(80, 142, 68, 173),
             };
-            Canvas.SetLeft(rect, x);
-            Canvas.SetTop(rect, y);
-            PreviewCanvas.Children.Add(rect);
-            _zoneVisuals.Add(rect);
 
-            // Zone label
-            var label = new TextBlock
+            for (int i = 0; i < _zones.Count; i++)
             {
-                Text = $"{z.Index}",
-                FontSize = Math.Min(w, h) * 0.3,
-                FontWeight = FontWeights.Bold,
-                Foreground = new SolidColorBrush(Color.FromArgb(200, 255, 255, 255))
-            };
-            Canvas.SetLeft(label, x + w / 2 - 15);
-            Canvas.SetTop(label, y + h / 2 - 15);
-            PreviewCanvas.Children.Add(label);
-            _zoneVisuals.Add(label);
-        }
+                var z = _zones[i];
+                int x = (int)(z.Left * cw);
+                int y = (int)(z.Top * ch);
+                int w = (int)(z.Width * cw);
+                int h = (int)(z.Height * ch);
 
-        // Draw splitters between zones
-        DrawSplitters(cw, ch);
+                var rect = new Rectangle
+                {
+                    Width = w, Height = h,
+                    Fill = new SolidColorBrush(colors[i % colors.Length]),
+                    Stroke = new SolidColorBrush(Colors.Gray),
+                    StrokeThickness = 1
+                };
+                Canvas.SetLeft(rect, x);
+                Canvas.SetTop(rect, y);
+                PreviewCanvas.Children.Add(rect);
+                _zoneVisuals.Add(rect);
+
+                var label = new TextBlock
+                {
+                    Text = $"{z.Index}",
+                    FontSize = Math.Min(w, h) * 0.3,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = new SolidColorBrush(Color.FromArgb(200, 255, 255, 255))
+                };
+                Canvas.SetLeft(label, x + w / 2 - 15);
+                Canvas.SetTop(label, y + h / 2 - 15);
+                PreviewCanvas.Children.Add(label);
+                _zoneVisuals.Add(label);
+            }
+
+            DrawSplitters(cw, ch);
         }
         finally { _isRendering = false; }
     }
@@ -161,7 +159,6 @@ public partial class LayoutEditorWindow : Window
                 if (edge == null) continue;
 
                 var (x, y, w, h, isHorizontal) = edge.Value;
-
                 var splitter = new Rectangle
                 {
                     Width = Math.Max(w, 6),
@@ -172,7 +169,6 @@ public partial class LayoutEditorWindow : Window
                 };
                 Canvas.SetLeft(splitter, x - (isHorizontal ? 0 : 3));
                 Canvas.SetTop(splitter, y - (isHorizontal ? 3 : 0));
-
                 splitter.MouseDown += OnSplitterMouseDown;
                 PreviewCanvas.Children.Add(splitter);
                 _zoneVisuals.Add(splitter);
@@ -184,73 +180,34 @@ public partial class LayoutEditorWindow : Window
         ZoneDefinition a, ZoneDefinition b)
     {
         const double eps = 0.001;
+        double aR = a.Left + a.Width, aB = a.Top + a.Height;
+        double bR = b.Left + b.Width, bB = b.Top + b.Height;
 
-        double aR = a.Left + a.Width;
-        double aB = a.Top + a.Height;
-        double bR = b.Left + b.Width;
-        double bB = b.Top + b.Height;
-
-        // Vertical splitter: a's right edge touches b's left edge
         if (Math.Abs(aR - b.Left) < eps)
         {
-            double overlapTop = Math.Max(a.Top, b.Top);
-            double overlapBottom = Math.Min(aB, bB);
-            if (overlapBottom > overlapTop)
+            double t = Math.Max(a.Top, b.Top), bt = Math.Min(aB, bB);
+            if (bt > t)
             {
                 int x = (int)(aR * PreviewCanvas.ActualWidth);
-                int y = (int)(overlapTop * PreviewCanvas.ActualHeight);
-                int h = (int)((overlapBottom - overlapTop) * PreviewCanvas.ActualHeight);
+                int y = (int)(t * PreviewCanvas.ActualHeight);
+                int h = (int)((bt - t) * PreviewCanvas.ActualHeight);
                 return (x, y, 6, h, false);
             }
         }
-
-        // Horizontal splitter: a's bottom edge touches b's top edge
         if (Math.Abs(aB - b.Top) < eps)
         {
-            double overlapLeft = Math.Max(a.Left, b.Left);
-            double overlapRight = Math.Min(aR, bR);
-            if (overlapRight > overlapLeft)
+            double l = Math.Max(a.Left, b.Left), r = Math.Min(aR, bR);
+            if (r > l)
             {
                 int y = (int)(aB * PreviewCanvas.ActualHeight);
-                int x = (int)(overlapLeft * PreviewCanvas.ActualWidth);
-                int w = (int)((overlapRight - overlapLeft) * PreviewCanvas.ActualWidth);
+                int x = (int)(l * PreviewCanvas.ActualWidth);
+                int w = (int)((r - l) * PreviewCanvas.ActualWidth);
                 return (x, y, w, 6, true);
             }
         }
-
-        // Reverse: b's right touches a's left
-        if (Math.Abs(bR - a.Left) < eps)
-        {
-            return FindSplitterEdge(b, a);
-        }
-        // Reverse: b's bottom touches a's top
-        if (Math.Abs(bB - a.Top) < eps)
-        {
-            return FindSplitterEdge(b, a);
-        }
-
+        if (Math.Abs(bR - a.Left) < eps) return FindSplitterEdge(b, a);
+        if (Math.Abs(bB - a.Top) < eps) return FindSplitterEdge(b, a);
         return null;
-    }
-
-    private void OnTemplateSelected(object sender, SelectionChangedEventArgs e)
-    {
-        if (_suppressTemplateChanged) return;
-        if (TemplateCombo.SelectedItem is PresetTemplate template)
-        {
-            var t = template;
-            Dispatcher.BeginInvoke(() =>
-            {
-                _zones = t.Zones.Select(z => new ZoneDefinition
-                {
-                    Index = z.Index, Left = z.Left, Top = z.Top,
-                    Width = z.Width, Height = z.Height, Padding = z.Padding
-                }).ToList();
-                LayoutNameBox.Text = t.Name;
-                _currentLayout = null;
-                RenderPreview();
-                StatusText.Text = $"已选用模板: {t.Name}（调整后请保存）";
-            });
-        }
     }
 
     private void OnSplitterMouseDown(object sender, MouseButtonEventArgs e)
@@ -258,8 +215,7 @@ public partial class LayoutEditorWindow : Window
         if (sender is Rectangle splitter && splitter.Tag is (int i, int j, bool isH))
         {
             _draggingSplitter = splitter;
-            _zoneA = i;
-            _zoneB = j;
+            _zoneA = i; _zoneB = j;
             _isHorizontalSplitter = isH;
             Mouse.Capture(PreviewCanvas, CaptureMode.SubTree);
             e.Handled = true;
@@ -277,24 +233,18 @@ public partial class LayoutEditorWindow : Window
 
         var a = _zones[_zoneA];
         var b = _zones[_zoneB];
-
         if (_isHorizontalSplitter)
         {
-            double newAHeight = relY - a.Top;
-            double newBHeight = (b.Top + b.Height) - relY;
-            a.Height = Math.Max(0.05, newAHeight);
+            a.Height = Math.Max(0.05, relY - a.Top);
             b.Top = relY;
-            b.Height = Math.Max(0.05, newBHeight);
+            b.Height = Math.Max(0.05, (b.Top + b.Height) - relY);
         }
         else
         {
-            double newAWidth = relX - a.Left;
-            double newBWidth = (b.Left + b.Width) - relX;
-            a.Width = Math.Max(0.05, newAWidth);
+            a.Width = Math.Max(0.05, relX - a.Left);
             b.Left = relX;
-            b.Width = Math.Max(0.05, newBWidth);
+            b.Width = Math.Max(0.05, (b.Left + b.Width) - relX);
         }
-
         RenderPreview();
         UpdateStatus(relX, relY);
     }
@@ -315,17 +265,66 @@ public partial class LayoutEditorWindow : Window
             : $"区域{_zoneA + 1}: {(int)(_zones[_zoneA].Width * 100)}% / 区域{_zoneB + 1}: {(int)(_zones[_zoneB].Width * 100)}%";
     }
 
-    private void OnNew(object sender, RoutedEventArgs e)
+    private void OnLayoutSelected(object sender, SelectionChangedEventArgs e)
     {
-        _currentLayout = null;
-        _zones = PresetTemplates.All[0].Zones.Select(z => new ZoneDefinition
+        if (_suppressLayoutChanged) return;
+        if (LayoutCombo.SelectedItem is LayoutDefinition layout)
         {
-            Index = z.Index, Left = z.Left, Top = z.Top,
-            Width = z.Width, Height = z.Height, Padding = z.Padding
-        }).ToList();
-        LayoutNameBox.Text = "新建布局";
-        RenderPreview();
-        StatusText.Text = "已创建新布局";
+            _currentLayout = layout;
+            _zones = layout.Zones.Select(z => new ZoneDefinition
+            {
+                Index = z.Index, Left = z.Left, Top = z.Top,
+                Width = z.Width, Height = z.Height, Padding = z.Padding
+            }).ToList();
+            LayoutNameBox.Text = layout.Name;
+            RenderPreview();
+            StatusText.Text = $"已加载: {layout.Name}";
+        }
+    }
+
+    private void OnNewFromTemplate(object sender, RoutedEventArgs e)
+    {
+        // Show a simple choice dialog for preset templates
+        var dialog = new Window
+        {
+            Title = "选择预设模板",
+            Width = 300, Height = 350,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Owner = this,
+            ResizeMode = ResizeMode.NoResize
+        };
+        var listBox = new ListBox
+        {
+            DisplayMemberPath = "Name",
+            Margin = new Thickness(10),
+            ItemsSource = PresetTemplates.All
+        };
+        var btn = new Button
+        {
+            Content = "确定", Width = 60, Height = 28,
+            Margin = new Thickness(10), IsDefault = true
+        };
+        var sp = new StackPanel();
+        sp.Children.Add(listBox);
+        sp.Children.Add(btn);
+        dialog.Content = sp;
+        btn.Click += (_, _) =>
+        {
+            if (listBox.SelectedItem is PresetTemplate template)
+            {
+                LoadPreset(template);
+            }
+            dialog.Close();
+        };
+        listBox.MouseDoubleClick += (_, _) =>
+        {
+            if (listBox.SelectedItem is PresetTemplate template)
+            {
+                LoadPreset(template);
+                dialog.Close();
+            }
+        };
+        dialog.ShowDialog();
     }
 
     private void OnSave(object sender, RoutedEventArgs e)
@@ -336,22 +335,46 @@ public partial class LayoutEditorWindow : Window
             System.Windows.MessageBox.Show("请输入布局名称。", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
+        if (_zones.Count == 0)
+        {
+            System.Windows.MessageBox.Show("布局区域为空，无法保存。", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+
+        // Reuse existing layout with same name to avoid duplicates
+        var allLayouts = _layoutService.GetAllLayouts();
+        var existing = allLayouts.FirstOrDefault(l =>
+            string.Equals(l.Name, name, StringComparison.OrdinalIgnoreCase) &&
+            (_currentLayout == null || l.LayoutId != _currentLayout.LayoutId));
+        if (existing != null)
+        {
+            var result = System.Windows.MessageBox.Show(
+                $"已存在同名布局 \"{name}\"，是否覆盖？", "同名冲突",
+                MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (result != MessageBoxResult.Yes) return;
+            _currentLayout = existing;
+        }
 
         var layout = _currentLayout ?? new LayoutDefinition();
         layout.Name = name;
         layout.Zones = _zones.Select((z, i) => new ZoneDefinition
         {
             Index = i + 1,
-            Left = z.Left,
-            Top = z.Top,
-            Width = z.Width,
-            Height = z.Height,
+            Left = z.Left, Top = z.Top,
+            Width = z.Width, Height = z.Height,
             Padding = z.Padding
         }).ToList();
 
         _layoutService.Save(layout);
         _currentLayout = layout;
-        StatusText.Text = $"已保存: {name}";
+
+        // Verify by reading back
+        var verify = _layoutService.GetActiveLayout();
+        StatusText.Text = verify?.LayoutId == layout.LayoutId
+            ? $"已保存: {name}"
+            : $"已保存: {name}（注意：未设为活跃）";
+
+        RefreshLayoutList();
     }
 
     private void OnDelete(object sender, RoutedEventArgs e)
@@ -361,11 +384,9 @@ public partial class LayoutEditorWindow : Window
             System.Windows.MessageBox.Show("请先保存布局再删除。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
-
         var result = System.Windows.MessageBox.Show(
-            $"确定删除布局 \"{_currentLayout.Name}\" 吗？",
-            "确认删除", MessageBoxButton.YesNo, MessageBoxImage.Question);
-
+            $"确定删除布局 \"{_currentLayout.Name}\" 吗？", "确认删除",
+            MessageBoxButton.YesNo, MessageBoxImage.Question);
         if (result == MessageBoxResult.Yes)
         {
             _layoutService.Delete(_currentLayout.LayoutId);
@@ -374,6 +395,8 @@ public partial class LayoutEditorWindow : Window
             LayoutNameBox.Text = "";
             PreviewCanvas.Children.Clear();
             _zoneVisuals.Clear();
+            RefreshLayoutList();
+            LoadPreset(PresetTemplates.All[0]);
             StatusText.Text = "已删除布局";
         }
     }

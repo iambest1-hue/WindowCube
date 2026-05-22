@@ -41,8 +41,8 @@ public static class PresetTemplates
 
     private static List<ZoneDefinition> CreateFourGrid() => new()
     {
-        new() { Index = 1, Left = 0.0, Top = 0.0, Width = 0.5, Height = 1.0 },
-        new() { Index = 2, Left = 0.5, Top = 0.0, Width = 0.5, Height = 1.0 },
+        new() { Index = 1, Left = 0.0, Top = 0.0, Width = 0.5, Height = 0.5 },
+        new() { Index = 2, Left = 0.5, Top = 0.0, Width = 0.5, Height = 0.5 },
         new() { Index = 3, Left = 0.0, Top = 0.5, Width = 0.5, Height = 0.5 },
         new() { Index = 4, Left = 0.5, Top = 0.5, Width = 0.5, Height = 0.5 },
     };

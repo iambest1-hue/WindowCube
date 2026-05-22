@@ -16,12 +16,12 @@
             <Label Content="名称:"/>
             <TextBox x:Name="LayoutNameBox" Width="120" Margin="2"/>
             <Separator/>
-            <Label Content="模板:"/>
-            <ComboBox x:Name="TemplateCombo" Width="140" Margin="2"
+            <Label Content="布局:"/>
+            <ComboBox x:Name="LayoutCombo" Width="160" Margin="2"
                       DisplayMemberPath="Name"
-                      SelectionChanged="OnTemplateSelected"/>
+                      SelectionChanged="OnLayoutSelected"/>
             <Separator/>
-            <Button Content="新建" Click="OnNew" Margin="2"/>
+            <Button Content="从模板新建" Click="OnNewFromTemplate" Margin="2"/>
             <Button Content="保存" Click="OnSave" Margin="2"/>
             <Button Content="删除" Click="OnDelete" Margin="2"/>
         </StackPanel>
