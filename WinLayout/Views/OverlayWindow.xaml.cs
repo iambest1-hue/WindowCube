@@ -141,48 +141,68 @@ public partial class OverlayWindow : Window
             _zoneElements.Add(label);
         }
 
-        // Draw zone boundary lines — bright white
+        // Draw zone boundary lines — only where adjacent zones share edges
         var lineColor = Color.FromArgb(200, 255, 255, 255);
         var lineBrush = new SolidColorBrush(lineColor);
 
-        // Collect unique X positions for vertical lines (exclude screen edges 0 and 1)
-        var vertLines = new HashSet<double>();
-        var horizLines = new HashSet<double>();
-        foreach (var z in zones)
+        for (int i = 0; i < zones.Count; i++)
         {
-            if (z.Left > 0.001) vertLines.Add(z.Left);
-            if (z.Top > 0.001) horizLines.Add(z.Top);
-            double right = z.Left + z.Width;
-            double bottom = z.Top + z.Height;
-            if (right < 0.999) vertLines.Add(right);
-            if (bottom < 0.999) horizLines.Add(bottom);
-        }
+            for (int j = i + 1; j < zones.Count; j++)
+            {
+                var a = zones[i];
+                var b = zones[j];
+                const double eps = 0.001;
+                double aR = a.Left + a.Width, aB = a.Top + a.Height;
+                double bR = b.Left + b.Width, bB = b.Top + b.Height;
 
-        foreach (var vx in vertLines)
-        {
-            var line = new Rectangle
-            {
-                Width = 1,
-                Height = ch,
-                Fill = lineBrush,
-                IsHitTestVisible = false
-            };
-            Canvas.SetLeft(line, vx * cw);
-            Canvas.SetTop(line, 0);
-            OverlayCanvas.Children.Add(line);
-        }
-        foreach (var hy in horizLines)
-        {
-            var line = new Rectangle
-            {
-                Width = cw,
-                Height = 1,
-                Fill = lineBrush,
-                IsHitTestVisible = false
-            };
-            Canvas.SetLeft(line, 0);
-            Canvas.SetTop(line, hy * ch);
-            OverlayCanvas.Children.Add(line);
+                // Vertical shared edge
+                double edgeV = double.NaN;
+                if (Math.Abs(aR - b.Left) < eps) edgeV = aR;
+                else if (Math.Abs(bR - a.Left) < eps) edgeV = bR;
+
+                if (!double.IsNaN(edgeV) && edgeV > eps && edgeV < 1.0 - eps)
+                {
+                    double top = Math.Max(a.Top, b.Top);
+                    double bottom = Math.Min(aB, bB);
+                    if (bottom - top > eps)
+                    {
+                        var line = new Rectangle
+                        {
+                            Width = 1,
+                            Height = (bottom - top) * ch,
+                            Fill = lineBrush,
+                            IsHitTestVisible = false
+                        };
+                        Canvas.SetLeft(line, edgeV * cw);
+                        Canvas.SetTop(line, top * ch);
+                        OverlayCanvas.Children.Add(line);
+                    }
+                }
+
+                // Horizontal shared edge
+                double edgeH = double.NaN;
+                if (Math.Abs(aB - b.Top) < eps) edgeH = aB;
+                else if (Math.Abs(bB - a.Top) < eps) edgeH = bB;
+
+                if (!double.IsNaN(edgeH) && edgeH > eps && edgeH < 1.0 - eps)
+                {
+                    double left = Math.Max(a.Left, b.Left);
+                    double right = Math.Min(aR, bR);
+                    if (right - left > eps)
+                    {
+                        var line = new Rectangle
+                        {
+                            Width = (right - left) * cw,
+                            Height = 1,
+                            Fill = lineBrush,
+                            IsHitTestVisible = false
+                        };
+                        Canvas.SetLeft(line, left * cw);
+                        Canvas.SetTop(line, edgeH * ch);
+                        OverlayCanvas.Children.Add(line);
+                    }
+                }
+            }
         }
 
         // Always call Show() to ensure window is visible.
