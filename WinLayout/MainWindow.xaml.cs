@@ -71,6 +71,12 @@ public partial class MainWindow : Window
     }
 
     private void UpdateStatus()
+    {
+        var layout = _layoutService.GetActiveLayout();
+        StatusLabel.Text = layout != null
+            ? $"当前布局: {layout.Name} — 拖拽吸附就绪"
+            : "拖拽吸附就绪";
+    }
 
     private bool _isActuallyClosing;
 
@@ -90,12 +96,6 @@ public partial class MainWindow : Window
         _virtualDesktopService?.Dispose();
         _hookService?.Dispose();
         Application.Current.Shutdown();
-    }
-    {
-        var layout = _layoutService.GetActiveLayout();
-        StatusLabel.Text = layout != null
-            ? $"当前布局: {layout.Name} — 拖拽吸附就绪"
-            : "拖拽吸附就绪";
     }
 
     private void OnOpenEditor(object sender, RoutedEventArgs e)
