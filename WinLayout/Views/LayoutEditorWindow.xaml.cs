@@ -183,30 +183,42 @@ public partial class LayoutEditorWindow : Window
         double aR = a.Left + a.Width, aB = a.Top + a.Height;
         double bR = b.Left + b.Width, bB = b.Top + b.Height;
 
-        if (Math.Abs(aR - b.Left) < eps)
+        // Vertical edge: a's right at b's left, or b's right at a's left
+        double edgeV = double.NaN;
+        if (Math.Abs(aR - b.Left) < eps) edgeV = aR;
+        else if (Math.Abs(bR - a.Left) < eps) edgeV = bR;
+
+        if (!double.IsNaN(edgeV))
         {
-            double t = Math.Max(a.Top, b.Top), bt = Math.Min(aB, bB);
-            if (bt > t)
+            double t = Math.Max(a.Top, b.Top);
+            double bt = Math.Min(aB, bB);
+            if (bt - t > eps)
             {
-                int x = (int)(aR * PreviewCanvas.ActualWidth);
+                int x = (int)(edgeV * PreviewCanvas.ActualWidth);
                 int y = (int)(t * PreviewCanvas.ActualHeight);
                 int h = (int)((bt - t) * PreviewCanvas.ActualHeight);
                 return (x, y, 6, h, false);
             }
         }
-        if (Math.Abs(aB - b.Top) < eps)
+
+        // Horizontal edge: a's bottom at b's top, or b's bottom at a's top
+        double edgeH = double.NaN;
+        if (Math.Abs(aB - b.Top) < eps) edgeH = aB;
+        else if (Math.Abs(bB - a.Top) < eps) edgeH = bB;
+
+        if (!double.IsNaN(edgeH))
         {
-            double l = Math.Max(a.Left, b.Left), r = Math.Min(aR, bR);
-            if (r > l)
+            double l = Math.Max(a.Left, b.Left);
+            double r = Math.Min(aR, bR);
+            if (r - l > eps)
             {
-                int y = (int)(aB * PreviewCanvas.ActualHeight);
+                int y = (int)(edgeH * PreviewCanvas.ActualHeight);
                 int x = (int)(l * PreviewCanvas.ActualWidth);
                 int w = (int)((r - l) * PreviewCanvas.ActualWidth);
                 return (x, y, w, 6, true);
             }
         }
-        if (Math.Abs(bR - a.Left) < eps) return FindSplitterEdge(b, a);
-        if (Math.Abs(bB - a.Top) < eps) return FindSplitterEdge(b, a);
+
         return null;
     }
 
