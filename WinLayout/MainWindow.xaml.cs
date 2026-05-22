@@ -36,6 +36,7 @@ public partial class MainWindow : Window
 
         SourceInitialized += OnSourceInitialized;
         Loaded += OnLoaded;
+        Closing += OnClosing;
     }
 
     private void OnSourceInitialized(object? sender, EventArgs e)
@@ -51,6 +52,7 @@ public partial class MainWindow : Window
         _trayService.QuickFillRequested += (_, _) => OnQuickFill();
         _trayService.ExportRequested += (_, _) => OnExportLayouts();
         _trayService.ImportRequested += (_, _) => OnImportLayouts();
+        _trayService.ExitRequested += (_, _) => ShutdownApp();
 
         _virtualDesktopService = new VirtualDesktopService(_configService, _layoutService);
         _virtualDesktopService.DesktopChanged += (_, _) =>
@@ -69,6 +71,26 @@ public partial class MainWindow : Window
     }
 
     private void UpdateStatus()
+
+    private bool _isActuallyClosing;
+
+    private void OnClosing(object? sender, System.ComponentModel.CancelEventArgs e)
+    {
+        if (!_isActuallyClosing)
+        {
+            e.Cancel = true;
+            Hide();
+        }
+    }
+
+    public void ShutdownApp()
+    {
+        _isActuallyClosing = true;
+        _trayService?.Dispose();
+        _virtualDesktopService?.Dispose();
+        _hookService?.Dispose();
+        Application.Current.Shutdown();
+    }
     {
         var layout = _layoutService.GetActiveLayout();
         StatusLabel.Text = layout != null
@@ -229,13 +251,5 @@ public partial class MainWindow : Window
                 System.Windows.Threading.DispatcherPriority.Background,
                 () => _windowManager.SnapWindow(hwnd, target, stacking));
         }
-    }
-
-    protected override void OnClosed(EventArgs e)
-    {
-        _trayService?.Dispose();
-        _virtualDesktopService?.Dispose();
-        _hookService?.Dispose();
-        base.OnClosed(e);
     }
 }

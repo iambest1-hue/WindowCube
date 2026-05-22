@@ -29,6 +29,7 @@ public class TrayService : IDisposable
     public event EventHandler? QuickFillRequested;
     public event EventHandler? ExportRequested;
     public event EventHandler? ImportRequested;
+    public event EventHandler? ExitRequested;
 
     public bool IsPaused => _isPaused;
 
@@ -134,8 +135,7 @@ public class TrayService : IDisposable
         _trayMenu.Items.Add(new Separator());
         _trayMenu.Items.Add(CreateMenuItem("退出", () =>
         {
-            Dispose();
-            Application.Current.Shutdown();
+            ExitRequested?.Invoke(this, EventArgs.Empty);
         }));
     }
 
