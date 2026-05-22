@@ -324,7 +324,7 @@ public partial class LayoutEditorWindow : Window
         {
             if (listBox.SelectedItem is PresetTemplate template)
             {
-                LoadPreset(template);
+                ApplyTemplateAndSave(template);
             }
             dialog.Close();
         };
@@ -332,11 +332,46 @@ public partial class LayoutEditorWindow : Window
         {
             if (listBox.SelectedItem is PresetTemplate template)
             {
-                LoadPreset(template);
+                ApplyTemplateAndSave(template);
                 dialog.Close();
             }
         };
         dialog.ShowDialog();
+    }
+
+    private void ApplyTemplateAndSave(PresetTemplate template)
+    {
+        // Find existing default layout for this template or create/save new one
+        var presetName = template.Name + " (默认)";
+        var allLayouts = _layoutService.GetAllLayouts();
+        var existing = allLayouts.FirstOrDefault(l => l.Name == presetName);
+        if (existing != null)
+        {
+            _currentLayout = existing;
+            _zones = template.Zones.Select(z => new ZoneDefinition
+            {
+                Index = z.Index, Left = z.Left, Top = z.Top,
+                Width = z.Width, Height = z.Height, Padding = z.Padding
+            }).ToList();
+            LayoutNameBox.Text = template.Name;
+            RenderPreview();
+            StatusText.Text = $"模板: {template.Name}（默认布局）";
+            // Select in combo
+            _suppressLayoutChanged = true;
+            for (int i = 0; i < LayoutCombo.Items.Count; i++)
+            {
+                if (LayoutCombo.Items[i] is LayoutDefinition l && l.LayoutId == existing.LayoutId)
+                {
+                    LayoutCombo.SelectedIndex = i;
+                    break;
+                }
+            }
+            _suppressLayoutChanged = false;
+        }
+        else
+        {
+            LoadPreset(template);
+        }
     }
 
     private void OnSave(object sender, RoutedEventArgs e)
@@ -394,6 +429,11 @@ public partial class LayoutEditorWindow : Window
         if (_currentLayout == null)
         {
             System.Windows.MessageBox.Show("请先保存布局再删除。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        if (_currentLayout.IsDefault)
+        {
+            System.Windows.MessageBox.Show("默认布局模板不可删除。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
         var result = System.Windows.MessageBox.Show(

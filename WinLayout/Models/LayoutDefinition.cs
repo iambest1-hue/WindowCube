@@ -18,4 +18,7 @@ public class LayoutDefinition
 
     [JsonPropertyName("IsTemplate")]
     public bool IsTemplate { get; set; }
+
+    [JsonPropertyName("IsDefault")]
+    public bool IsDefault { get; set; }
 }

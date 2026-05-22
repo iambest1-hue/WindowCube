@@ -15,25 +15,37 @@ public class LayoutService
     {
         var layouts = _config.LoadAllLayouts();
 
-        // If no layouts exist, seed with default left-right split
-        if (layouts.Count == 0)
+        // Seed preset templates as default layouts if missing
+        foreach (var preset in PresetTemplates.All)
         {
-            var defaultLayout = new LayoutDefinition
+            var presetName = preset.Name + " (默认)";
+            if (!layouts.Any(l => l.Name == presetName))
             {
-                Name = "默认左右二分",
-                Zones = PresetTemplates.All[0].Zones
-            };
-            _config.SaveLayout(defaultLayout);
-            layouts.Add(defaultLayout);
-
-            // Set as active for current screen
-            var userConfig = _config.LoadConfig();
-            if (!userConfig.ScreenLayouts.ContainsKey("default"))
-            {
-                userConfig.ScreenLayouts["default"] = new ScreenLayoutConfig
+                var defaultLayout = new LayoutDefinition
                 {
-                    ActiveLayoutId = defaultLayout.LayoutId
+                    Name = presetName,
+                    Zones = preset.Zones.Select(z => new ZoneDefinition
+                    {
+                        Index = z.Index, Left = z.Left, Top = z.Top,
+                        Width = z.Width, Height = z.Height, Padding = z.Padding
+                    }).ToList(),
+                    IsDefault = true
                 };
+                _config.SaveLayout(defaultLayout);
+                layouts.Add(defaultLayout);
+            }
+        }
+
+        // Set first layout as active if nothing is set
+        if (layouts.Count > 0)
+        {
+            var userConfig = _config.LoadConfig();
+            if (!userConfig.ScreenLayouts.ContainsKey("default") ||
+                string.IsNullOrEmpty(userConfig.ScreenLayouts["default"].ActiveLayoutId))
+            {
+                if (!userConfig.ScreenLayouts.ContainsKey("default"))
+                    userConfig.ScreenLayouts["default"] = new ScreenLayoutConfig();
+                userConfig.ScreenLayouts["default"].ActiveLayoutId = layouts[0].LayoutId;
                 _config.SaveConfig(userConfig);
             }
         }
@@ -56,6 +68,7 @@ public class LayoutService
     {
         _config.SaveLayout(layout);
 
+        // Don't overwrite IsDefault flag when saving
         var config = _config.LoadConfig();
         if (!config.ScreenLayouts.ContainsKey("default"))
             config.ScreenLayouts["default"] = new ScreenLayoutConfig();
