@@ -31,6 +31,9 @@ public class WindowManager
         // Un-maximize first
         UnmaximizeWindow(hwnd);
 
+        // Remove any old occupancy entries for this window before snapping to new zone
+        RemoveWindow(hwnd);
+
         var screenId = GetScreenId(target);
 
         // Check if zone is occupied
