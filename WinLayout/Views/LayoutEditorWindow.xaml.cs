@@ -245,18 +245,37 @@ public partial class LayoutEditorWindow : Window
 
         var a = _zones[_zoneA];
         var b = _zones[_zoneB];
+
         if (_isHorizontalSplitter)
         {
-            a.Height = Math.Max(0.05, relY - a.Top);
-            b.Top = relY;
-            b.Height = Math.Max(0.05, (b.Top + b.Height) - relY);
+            // Store original values before any modification
+            double origBTop = b.Top;
+            double origBHeight = b.Height;
+            double origBTopPlusHeight = origBTop + origBHeight;
+
+            double newAHeight = relY - a.Top;
+            double newBTop = relY;
+            double newBHeight = origBTopPlusHeight - newBTop;
+
+            a.Height = Math.Max(0.05, newAHeight);
+            b.Top = newBTop;
+            b.Height = Math.Max(0.05, newBHeight);
         }
         else
         {
-            a.Width = Math.Max(0.05, relX - a.Left);
-            b.Left = relX;
-            b.Width = Math.Max(0.05, (b.Left + b.Width) - relX);
+            double origBLeft = b.Left;
+            double origBWidth = b.Width;
+            double origBLeftPlusWidth = origBLeft + origBWidth;
+
+            double newAWidth = relX - a.Left;
+            double newBLeft = relX;
+            double newBWidth = origBLeftPlusWidth - newBLeft;
+
+            a.Width = Math.Max(0.05, newAWidth);
+            b.Left = newBLeft;
+            b.Width = Math.Max(0.05, newBWidth);
         }
+
         RenderPreview();
         UpdateStatus(relX, relY);
     }
