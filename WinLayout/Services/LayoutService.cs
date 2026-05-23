@@ -29,10 +29,21 @@ public class LayoutService
                         Index = z.Index, Left = z.Left, Top = z.Top,
                         Width = z.Width, Height = z.Height, Padding = z.Padding
                     }).ToList(),
-                    IsDefault = true
+                    IsDefault = true,
+                    IsFavorite = true
                 };
                 _config.SaveLayout(defaultLayout);
                 layouts.Add(defaultLayout);
+            }
+        }
+
+        // If no layouts are favorited (first run or upgrade), mark all as favorites
+        if (layouts.Count > 0 && !layouts.Any(l => l.IsFavorite))
+        {
+            foreach (var l in layouts)
+            {
+                l.IsFavorite = true;
+                _config.SaveLayout(l);
             }
         }
 
