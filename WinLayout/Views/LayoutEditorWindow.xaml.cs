@@ -106,6 +106,11 @@ public partial class LayoutEditorWindow : Window
         _isRendering = true;
         try
         {
+            // Release mouse capture before destroying visual tree to prevent WPF state corruption
+            bool hadCapture = _draggingSplitter != null;
+            if (hadCapture)
+                Mouse.Capture(null);
+
             PreviewCanvas.Children.Clear();
             _zoneVisuals.Clear();
 
@@ -156,6 +161,10 @@ public partial class LayoutEditorWindow : Window
             }
 
             DrawSplitters(cw, ch);
+
+            // Re-establish mouse capture after rebuild
+            if (hadCapture)
+                Mouse.Capture(PreviewCanvas, CaptureMode.SubTree);
         }
         finally { _isRendering = false; }
     }
