@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -38,7 +39,7 @@ public partial class LayoutEditorWindow : Window
     private void RefreshLayoutList()
     {
         _suppressLayoutChanged = true;
-        var layouts = _layoutService.GetAllLayouts();
+        var layouts = _layoutService.GetAllLayouts().OrderBy(l => l.Zones.Count).ToList();
         LayoutCombo.ItemsSource = layouts;
         _suppressLayoutChanged = false;
     }

@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Drawing;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
@@ -87,7 +88,7 @@ public class TrayService : IDisposable
 
         _trayMenu.Items.Clear();
 
-        var layouts = _layoutService.GetAllLayouts();
+        var layouts = _layoutService.GetAllLayouts().OrderBy(l => l.Zones.Count).ToList();
         var active = _layoutService.GetActiveLayout();
 
         foreach (var layout in layouts)

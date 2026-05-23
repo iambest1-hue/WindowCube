@@ -73,9 +73,11 @@ public partial class MainWindow : Window
     private void UpdateStatus()
     {
         var layout = _layoutService.GetActiveLayout();
+        var config = _configService.LoadConfig();
+        var modifierText = config.ModifierKey == "None" ? "直接拖拽" : config.ModifierKey + "+拖拽";
         StatusLabel.Text = layout != null
-            ? $"当前布局: {layout.Name} — 拖拽吸附就绪"
-            : "拖拽吸附就绪";
+            ? $"当前布局: {layout.Name} — {modifierText}吸附就绪"
+            : $"{modifierText}吸附就绪";
     }
 
     private bool _isActuallyClosing;
@@ -149,7 +151,10 @@ public partial class MainWindow : Window
             _hookService.DragEnded += OnDragEnded;
             _hookService.Start();
         }
-        StatusLabel.Text = paused ? "已暂停 — 拖拽吸附禁用" : "拖拽吸附就绪";
+        if (paused)
+            StatusLabel.Text = "已暂停 — 拖拽吸附禁用";
+        else
+            UpdateStatus();
     }
 
     private void OnQuickFill()
