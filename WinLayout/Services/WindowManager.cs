@@ -39,7 +39,11 @@ public class WindowManager
         {
             if (existingHwnd != hwnd)
             {
-                if (stacking)
+                if (!User32.IsWindow(existingHwnd))
+                {
+                    _zoneOccupancy.Remove(key);
+                }
+                else if (stacking)
                 {
                     StackWindowsInZone(hwnd, existingHwnd, target);
                     _zoneOccupancy[key] = hwnd;
