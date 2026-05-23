@@ -274,8 +274,8 @@ public partial class LayoutEditorWindow : Window
         }
 
         var pos = e.GetPosition(PreviewCanvas);
-        double relX = Math.Clamp(pos.X / PreviewCanvas.ActualWidth, 0.05, 0.95);
-        double relY = Math.Clamp(pos.Y / PreviewCanvas.ActualHeight, 0.05, 0.95);
+        double relX = Math.Clamp(pos.X / PreviewCanvas.ActualWidth, 0.10, 0.90);
+        double relY = Math.Clamp(pos.Y / PreviewCanvas.ActualHeight, 0.10, 0.90);
 
         var a = _zones[_zoneA];
 
@@ -294,14 +294,14 @@ public partial class LayoutEditorWindow : Window
                 if (Math.Abs(z.Top + z.Height - edgeY) < eps)
                 {
                     // Zone is above the splitter — adjust height
-                    z.Height = Math.Max(0.05, relY - z.Top);
+                    z.Height = Math.Max(0.10, relY - z.Top);
                 }
                 else if (Math.Abs(z.Top - edgeY) < eps)
                 {
                     // Zone is below the splitter — adjust top and height
                     double origBottom = orig[i].Top + orig[i].Height;
                     z.Top = relY;
-                    z.Height = Math.Max(0.05, origBottom - relY);
+                    z.Height = Math.Max(0.10, origBottom - relY);
                 }
             }
         }
@@ -315,14 +315,14 @@ public partial class LayoutEditorWindow : Window
                 if (Math.Abs(z.Left + z.Width - edgeX) < eps)
                 {
                     // Zone is to the left of the splitter — adjust width
-                    z.Width = Math.Max(0.05, relX - z.Left);
+                    z.Width = Math.Max(0.10, relX - z.Left);
                 }
                 else if (Math.Abs(z.Left - edgeX) < eps)
                 {
                     // Zone is to the right of the splitter — adjust left and width
                     double origRight = orig[i].Left + orig[i].Width;
                     z.Left = relX;
-                    z.Width = Math.Max(0.05, origRight - relX);
+                    z.Width = Math.Max(0.10, origRight - relX);
                 }
             }
         }
