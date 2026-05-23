@@ -210,6 +210,9 @@ public partial class MainWindow : Window
 
     private void OnLayoutSwitched(string layoutId)
     {
+        UpdateStatus();
+        RefreshLayoutLists();
+
         var layout = _layoutService.GetActiveLayout();
         if (layout == null || _windowManager.LastSnapTarget == null) return;
 
@@ -217,8 +220,6 @@ public partial class MainWindow : Window
         _windowManager.RearrangeAll(layout.Zones,
             lastTarget.ScreenX, lastTarget.ScreenY,
             lastTarget.ScreenWidth, lastTarget.ScreenHeight);
-
-        UpdateStatus();
     }
 
     private void OnExportLayouts()
