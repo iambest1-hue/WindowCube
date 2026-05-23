@@ -234,10 +234,22 @@ public partial class LayoutEditorWindow : Window
         }
     }
 
+    private bool _defaultStripped;
+
     private void OnDragMouseMove(object sender, MouseEventArgs e)
     {
         if (_draggingSplitter == null) return;
         if (e.LeftButton != MouseButtonState.Pressed) return;
+
+        // Strip "(默认)" suffix on first move so user sees it in real-time
+        if (_currentLayout != null && _currentLayout.IsDefault)
+        {
+            _currentLayout.IsDefault = false;
+            var defaultSuffix = " (默认)";
+            if (LayoutNameBox.Text.EndsWith(defaultSuffix))
+                LayoutNameBox.Text = LayoutNameBox.Text[..^defaultSuffix.Length];
+            _defaultStripped = true;
+        }
 
         var pos = e.GetPosition(PreviewCanvas);
         double relX = Math.Clamp(pos.X / PreviewCanvas.ActualWidth, 0.05, 0.95);
@@ -287,16 +299,10 @@ public partial class LayoutEditorWindow : Window
             Mouse.Capture(null);
             _draggingSplitter = null;
 
-            // If this was a default layout, strip the default suffix so
-            // saving won't overwrite the factory template.
-            if (_currentLayout != null && _currentLayout.IsDefault)
+            if (_defaultStripped && _currentLayout != null)
             {
-                _currentLayout.IsDefault = false;
-                var defaultSuffix = " (默认)";
-                if (LayoutNameBox.Text.EndsWith(defaultSuffix))
-                    LayoutNameBox.Text = LayoutNameBox.Text[..^defaultSuffix.Length];
-                // Persist the IsDefault change
                 _layoutService.Save(_currentLayout);
+                _defaultStripped = false;
             }
         }
     }
