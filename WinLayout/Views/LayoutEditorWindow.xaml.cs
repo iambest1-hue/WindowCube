@@ -553,7 +553,9 @@ public partial class LayoutEditorWindow : Window
             LoadPreset(PresetTemplates.All[0]);
             StatusText.Text = "已删除布局";
 
-            (Owner as MainWindow)?.RefreshAll();
+            var owner = Owner as MainWindow;
+            Dispatcher.BeginInvoke(new Action(() => owner?.RefreshAll()),
+                System.Windows.Threading.DispatcherPriority.Background);
         }
     }
 
