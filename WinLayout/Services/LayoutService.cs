@@ -75,12 +75,13 @@ public class LayoutService
             if (active != null)
                 return active;
 
-            // Active layout was deleted — fall back to first available
+            // Active layout was deleted — fall back to first favorite
             if (layouts.Count > 0)
             {
-                screenCfg.ActiveLayoutId = layouts[0].LayoutId;
+                var next = layouts.FirstOrDefault(l => l.IsFavorite) ?? layouts[0];
+                screenCfg.ActiveLayoutId = next.LayoutId;
                 _config.SaveConfig(config);
-                return layouts[0];
+                return next;
             }
         }
         return GetAllLayouts().FirstOrDefault();
@@ -110,5 +111,16 @@ public class LayoutService
     public void Delete(string layoutId)
     {
         _config.DeleteLayout(layoutId);
+
+        // If the active layout was deleted, fall back to the first favorite
+        var config = _config.LoadConfig();
+        if (config.ScreenLayouts.TryGetValue("default", out var screenCfg) &&
+            screenCfg.ActiveLayoutId == layoutId)
+        {
+            var layouts = _config.LoadAllLayouts();
+            var next = layouts.FirstOrDefault(l => l.IsFavorite) ?? layouts.FirstOrDefault();
+            screenCfg.ActiveLayoutId = next?.LayoutId ?? string.Empty;
+            _config.SaveConfig(config);
+        }
     }
 }
