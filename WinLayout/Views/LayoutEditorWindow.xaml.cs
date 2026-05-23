@@ -286,6 +286,18 @@ public partial class LayoutEditorWindow : Window
         {
             Mouse.Capture(null);
             _draggingSplitter = null;
+
+            // If this was a default layout, strip the default suffix so
+            // saving won't overwrite the factory template.
+            if (_currentLayout != null && _currentLayout.IsDefault)
+            {
+                _currentLayout.IsDefault = false;
+                var defaultSuffix = " (默认)";
+                if (LayoutNameBox.Text.EndsWith(defaultSuffix))
+                    LayoutNameBox.Text = LayoutNameBox.Text[..^defaultSuffix.Length];
+                // Persist the IsDefault change
+                _layoutService.Save(_currentLayout);
+            }
         }
     }
 
