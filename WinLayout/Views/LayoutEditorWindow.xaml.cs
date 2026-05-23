@@ -274,12 +274,13 @@ public partial class LayoutEditorWindow : Window
         }
 
         var pos = e.GetPosition(PreviewCanvas);
-        double relX = Math.Clamp(pos.X / PreviewCanvas.ActualWidth, 0.10, 0.90);
-        double relY = Math.Clamp(pos.Y / PreviewCanvas.ActualHeight, 0.10, 0.90);
+        double rawX = Math.Clamp(pos.X / PreviewCanvas.ActualWidth, 0.01, 0.99);
+        double rawY = Math.Clamp(pos.Y / PreviewCanvas.ActualHeight, 0.01, 0.99);
 
         var a = _zones[_zoneA];
 
         const double eps = 0.001;
+        const double minSize = 0.10;
 
         // Save original values before any modification
         var orig = _zones.Select(z => (Top: z.Top, Left: z.Left, Width: z.Width, Height: z.Height)).ToList();
@@ -288,47 +289,64 @@ public partial class LayoutEditorWindow : Window
         {
             double edgeY = a.Top + a.Height;
 
+            // Calculate dynamic valid range to prevent crossing adjacent splitters
+            double minY = 0, maxY = 1;
             foreach (var z in _zones)
             {
                 int i = z.Index - 1;
                 if (Math.Abs(z.Top + z.Height - edgeY) < eps)
-                {
-                    // Zone is above the splitter — adjust height
-                    z.Height = Math.Max(0.10, relY - z.Top);
-                }
+                    minY = Math.Max(minY, z.Top + minSize);
+                else if (Math.Abs(z.Top - edgeY) < eps)
+                    maxY = Math.Min(maxY, orig[i].Top + orig[i].Height - minSize);
+            }
+            double relY = Math.Clamp(rawY, minY, maxY);
+
+            foreach (var z in _zones)
+            {
+                int i = z.Index - 1;
+                if (Math.Abs(z.Top + z.Height - edgeY) < eps)
+                    z.Height = relY - z.Top;
                 else if (Math.Abs(z.Top - edgeY) < eps)
                 {
-                    // Zone is below the splitter — adjust top and height
-                    double origBottom = orig[i].Top + orig[i].Height;
                     z.Top = relY;
-                    z.Height = Math.Max(0.10, origBottom - relY);
+                    z.Height = orig[i].Top + orig[i].Height - relY;
                 }
             }
+
+            RenderPreview();
+            UpdateStatus(0, relY);
         }
         else
         {
             double edgeX = a.Left + a.Width;
 
+            // Calculate dynamic valid range to prevent crossing adjacent splitters
+            double minX = 0, maxX = 1;
             foreach (var z in _zones)
             {
                 int i = z.Index - 1;
                 if (Math.Abs(z.Left + z.Width - edgeX) < eps)
-                {
-                    // Zone is to the left of the splitter — adjust width
-                    z.Width = Math.Max(0.10, relX - z.Left);
-                }
+                    minX = Math.Max(minX, z.Left + minSize);
+                else if (Math.Abs(z.Left - edgeX) < eps)
+                    maxX = Math.Min(maxX, orig[i].Left + orig[i].Width - minSize);
+            }
+            double relX = Math.Clamp(rawX, minX, maxX);
+
+            foreach (var z in _zones)
+            {
+                int i = z.Index - 1;
+                if (Math.Abs(z.Left + z.Width - edgeX) < eps)
+                    z.Width = relX - z.Left;
                 else if (Math.Abs(z.Left - edgeX) < eps)
                 {
-                    // Zone is to the right of the splitter — adjust left and width
-                    double origRight = orig[i].Left + orig[i].Width;
                     z.Left = relX;
-                    z.Width = Math.Max(0.10, origRight - relX);
+                    z.Width = orig[i].Left + orig[i].Width - relX;
                 }
             }
-        }
 
-        RenderPreview();
-        UpdateStatus(relX, relY);
+            RenderPreview();
+            UpdateStatus(relX, 0);
+        }
     }
 
     private void OnDragMouseUp(object sender, MouseButtonEventArgs e)
