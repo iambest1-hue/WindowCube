@@ -3,6 +3,7 @@ using System.IO;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Interop;
 using WinLayout.Models;
 using WinLayout.Services;
@@ -113,6 +114,15 @@ public partial class MainWindow : Window
             _trayService!.RefreshLayoutMenuItems();
             RefreshLayoutLists();
         }
+    }
+
+    private void OnLayoutDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if ((sender as ListBox)?.SelectedItem is not LayoutDefinition layout)
+            return;
+
+        _layoutService.SetActive(layout.LayoutId);
+        OnLayoutSwitched(layout.LayoutId);
     }
 
     private void OnClearFavorites(object sender, RoutedEventArgs e)
