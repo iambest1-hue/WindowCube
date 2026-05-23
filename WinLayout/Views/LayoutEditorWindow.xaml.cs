@@ -17,6 +17,8 @@ public partial class LayoutEditorWindow : Window
     private LayoutDefinition? _currentLayout;
     private readonly List<FrameworkElement> _zoneVisuals = new();
 
+    public event EventHandler? LayoutDeleted;
+
     private UIElement? _draggingSplitter;
     private bool _isRendering;
     private bool _isHorizontalSplitter;
@@ -543,6 +545,7 @@ public partial class LayoutEditorWindow : Window
         if (result == MessageBoxResult.Yes)
         {
             _layoutService.Delete(_currentLayout.LayoutId);
+            LayoutDeleted?.Invoke(this, EventArgs.Empty);
             _currentLayout = null;
             _zones.Clear();
             LayoutNameBox.Text = "";

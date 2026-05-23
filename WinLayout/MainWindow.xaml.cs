@@ -162,13 +162,16 @@ public partial class MainWindow : Window
     {
         var editor = new LayoutEditorWindow(_layoutService, _configService);
         editor.Owner = this;
-        editor.Closed += (_, _) =>
-        {
-            _trayService?.RefreshLayoutMenuItems();
-            UpdateStatus();
-            RefreshLayoutLists();
-        };
+        editor.LayoutDeleted += (_, _) => RefreshAll();
+        editor.Closed += (_, _) => RefreshAll();
         editor.ShowDialog();
+    }
+
+    private void RefreshAll()
+    {
+        _trayService?.RefreshLayoutMenuItems();
+        UpdateStatus();
+        RefreshLayoutLists();
     }
 
     private void OpenSettings()
