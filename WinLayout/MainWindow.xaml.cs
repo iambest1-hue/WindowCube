@@ -65,7 +65,7 @@ public partial class MainWindow : Window
         _virtualDesktopService.Start();
 
         UpdateStatus();
-        RefreshFavorites();
+        RefreshLayoutLists();
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
@@ -83,24 +83,33 @@ public partial class MainWindow : Window
             : $"{modifierText}吸附就绪";
     }
 
-    private void RefreshFavorites()
+    private void RefreshLayoutLists()
     {
         var layouts = _layoutService.GetAllLayouts().OrderBy(l => l.Zones.Count).ToList();
-        var items = new List<FrameworkElement>();
-        foreach (var layout in layouts)
+        AllLayoutsList.ItemsSource = layouts.Where(l => !l.IsFavorite).ToList();
+        FavoriteLayoutsList.ItemsSource = layouts.Where(l => l.IsFavorite).ToList();
+    }
+
+    private void OnAddFavorite(object sender, RoutedEventArgs e)
+    {
+        if (AllLayoutsList.SelectedItem is LayoutDefinition layout)
         {
-            var cb = new CheckBox
-            {
-                Content = layout.Name,
-                IsChecked = layout.IsFavorite,
-                Tag = layout.LayoutId,
-                Margin = new Thickness(0, 2, 0, 2)
-            };
-            cb.Checked += OnFavoriteChanged;
-            cb.Unchecked += OnFavoriteChanged;
-            items.Add(cb);
+            layout.IsFavorite = true;
+            _layoutService.Save(layout);
+            _trayService!.RefreshLayoutMenuItems();
+            RefreshLayoutLists();
         }
-        FavoriteList.ItemsSource = items;
+    }
+
+    private void OnRemoveFavorite(object sender, RoutedEventArgs e)
+    {
+        if (FavoriteLayoutsList.SelectedItem is LayoutDefinition layout)
+        {
+            layout.IsFavorite = false;
+            _layoutService.Save(layout);
+            _trayService!.RefreshLayoutMenuItems();
+            RefreshLayoutLists();
+        }
     }
 
     private void OnShowMenu(object sender, RoutedEventArgs e)
@@ -108,20 +117,6 @@ public partial class MainWindow : Window
         var menu = _trayService!.GetContextMenu();
         menu.PlacementTarget = sender as UIElement;
         menu.IsOpen = true;
-    }
-
-    private void OnFavoriteChanged(object sender, RoutedEventArgs e)
-    {
-        if (sender is not CheckBox cb || cb.Tag is not string layoutId)
-            return;
-
-        var layouts = _layoutService.GetAllLayouts();
-        var layout = layouts.FirstOrDefault(l => l.LayoutId == layoutId);
-        if (layout == null) return;
-
-        layout.IsFavorite = cb.IsChecked == true;
-        _layoutService.Save(layout);
-        _trayService!.RefreshLayoutMenuItems();
     }
 
     private bool _isActuallyClosing;
@@ -152,7 +147,7 @@ public partial class MainWindow : Window
         {
             _trayService?.RefreshLayoutMenuItems();
             UpdateStatus();
-            RefreshFavorites();
+            RefreshLayoutLists();
         };
         editor.ShowDialog();
     }
@@ -262,7 +257,7 @@ public partial class MainWindow : Window
                 }
                 _trayService?.RefreshLayoutMenuItems();
                 UpdateStatus();
-                RefreshFavorites();
+                RefreshLayoutLists();
                 MessageBox.Show($"已导入 {layouts?.Count ?? 0} 个布局。", "导入成功");
             }
             catch (Exception ex)
