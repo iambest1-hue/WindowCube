@@ -21,6 +21,7 @@ public partial class LayoutEditorWindow : Window
     private bool _isRendering;
     private bool _isHorizontalSplitter;
     private bool _suppressLayoutChanged;
+    private bool _suppressDirty;
     private bool _isDirty;
     private int _zoneA, _zoneB;
 
@@ -32,7 +33,7 @@ public partial class LayoutEditorWindow : Window
 
         AddHandler(PreviewMouseMoveEvent, (MouseEventHandler)OnDragMouseMove, handledEventsToo: true);
         AddHandler(PreviewMouseLeftButtonUpEvent, (MouseButtonEventHandler)OnDragMouseUp, handledEventsToo: true);
-        LayoutNameBox.TextChanged += (_, _) => _isDirty = true;
+        LayoutNameBox.TextChanged += (_, _) => { if (!_suppressDirty) _isDirty = true; };
 
         RefreshLayoutList();
         LoadCurrentLayout();
@@ -57,7 +58,9 @@ public partial class LayoutEditorWindow : Window
                 Index = z.Index, Left = z.Left, Top = z.Top,
                 Width = z.Width, Height = z.Height, Padding = z.Padding
             }).ToList();
+            _suppressDirty = true;
             LayoutNameBox.Text = layout.Name;
+            _suppressDirty = false;
             _isDirty = false;
             RenderPreview();
 
@@ -87,7 +90,9 @@ public partial class LayoutEditorWindow : Window
             Index = z.Index, Left = z.Left, Top = z.Top,
             Width = z.Width, Height = z.Height, Padding = z.Padding
         }).ToList();
+        _suppressDirty = true;
         LayoutNameBox.Text = template.Name;
+        _suppressDirty = false;
         _currentLayout = null;
         _isDirty = true;
         RenderPreview();
@@ -332,7 +337,9 @@ public partial class LayoutEditorWindow : Window
                 Index = z.Index, Left = z.Left, Top = z.Top,
                 Width = z.Width, Height = z.Height, Padding = z.Padding
             }).ToList();
+            _suppressDirty = true;
             LayoutNameBox.Text = layout.Name;
+            _suppressDirty = false;
             _isDirty = false;
             RenderPreview();
             StatusText.Text = $"已加载: {layout.Name}";
@@ -398,7 +405,10 @@ public partial class LayoutEditorWindow : Window
                 Index = z.Index, Left = z.Left, Top = z.Top,
                 Width = z.Width, Height = z.Height, Padding = z.Padding
             }).ToList();
+            _suppressDirty = true;
             LayoutNameBox.Text = template.Name;
+            _suppressDirty = false;
+            _isDirty = false;
             RenderPreview();
             StatusText.Text = $"模板: {template.Name}（默认布局）";
             // Select in combo
@@ -518,11 +528,8 @@ public partial class LayoutEditorWindow : Window
             {
                 case MessageBoxResult.Yes:
                     OnSave(this, new RoutedEventArgs());
-                    if (_isDirty) // save was cancelled or failed
-                    {
+                    if (_isDirty)
                         e.Cancel = true;
-                        return;
-                    }
                     break;
                 case MessageBoxResult.No:
                     break;
