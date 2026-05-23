@@ -23,6 +23,7 @@ public partial class LayoutEditorWindow : Window
     private bool _suppressLayoutChanged;
     private bool _suppressDirty;
     private bool _isDirty;
+    private bool _closingConfirmed;
     private int _zoneA, _zoneB;
 
     public LayoutEditorWindow(LayoutService layoutService, ConfigService configService)
@@ -518,25 +519,33 @@ public partial class LayoutEditorWindow : Window
 
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
     {
-        if (_isDirty)
+        if (_isDirty && !_closingConfirmed)
         {
-            var result = MessageBox.Show(
-                "当前布局有未保存的更改，是否保存？\n\n是 — 保存后关闭\n否 — 放弃更改并关闭\n取消 — 返回编辑器",
-                "未保存的更改", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
-
-            switch (result)
+            e.Cancel = true;
+            Dispatcher.BeginInvoke(new Action(() =>
             {
-                case MessageBoxResult.Yes:
-                    OnSave(this, new RoutedEventArgs());
-                    if (_isDirty)
-                        e.Cancel = true;
-                    break;
-                case MessageBoxResult.No:
-                    break;
-                case MessageBoxResult.Cancel:
-                    e.Cancel = true;
-                    break;
-            }
+                var result = MessageBox.Show(this,
+                    "当前布局有未保存的更改，是否保存？\n\n是 — 保存后关闭\n否 — 放弃更改并关闭\n取消 — 返回编辑器",
+                    "未保存的更改", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+
+                switch (result)
+                {
+                    case MessageBoxResult.Yes:
+                        OnSave(this, new RoutedEventArgs());
+                        if (!_isDirty)
+                        {
+                            _closingConfirmed = true;
+                            Close();
+                        }
+                        break;
+                    case MessageBoxResult.No:
+                        _closingConfirmed = true;
+                        Close();
+                        break;
+                    // Cancel: do nothing, stay open
+                }
+            }));
+            return;
         }
         base.OnClosing(e);
     }
