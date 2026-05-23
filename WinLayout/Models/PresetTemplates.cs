@@ -13,7 +13,13 @@ public static class PresetTemplates
         new("3×2 网格", CreateThreeByTwo()),
         new("4×2 网格", CreateFourByTwo()),
         new("主窗+右侧两小窗", CreateMainWithTwoRight()),
+        new("主窗+右侧三小窗", CreateMainWithThreeRight()),
+        new("主窗+左侧二小窗", CreateMainWithTwoLeft()),
+        new("主窗+左侧三小窗", CreateMainWithThreeLeft()),
         new("主窗+底部两小窗", CreateMainWithTwoBottom()),
+        new("主窗+底部三小窗", CreateMainWithThreeBottom()),
+        new("主窗+顶部二小窗", CreateMainWithTwoTop()),
+        new("主窗+顶部三小窗", CreateMainWithThreeTop()),
         new("五等分", CreateFiveColumn()),
         new("六等分", CreateSixColumn()),
     };
@@ -93,11 +99,57 @@ public static class PresetTemplates
         new() { Index = 3, Left = 0.6, Top = 0.5, Width = 0.4, Height = 0.5 },
     };
 
+    private static List<ZoneDefinition> CreateMainWithThreeRight() => new()
+    {
+        new() { Index = 1, Left = 0.0, Top = 0.0, Width = 0.6, Height = 1.0 },
+        new() { Index = 2, Left = 0.6, Top = 0.0, Width = 0.4, Height = 1.0 / 3 },
+        new() { Index = 3, Left = 0.6, Top = 1.0 / 3, Width = 0.4, Height = 1.0 / 3 },
+        new() { Index = 4, Left = 0.6, Top = 2.0 / 3, Width = 0.4, Height = 1.0 / 3 },
+    };
+
+    private static List<ZoneDefinition> CreateMainWithTwoLeft() => new()
+    {
+        new() { Index = 1, Left = 0.4, Top = 0.0, Width = 0.6, Height = 1.0 },
+        new() { Index = 2, Left = 0.0, Top = 0.0, Width = 0.4, Height = 0.5 },
+        new() { Index = 3, Left = 0.0, Top = 0.5, Width = 0.4, Height = 0.5 },
+    };
+
+    private static List<ZoneDefinition> CreateMainWithThreeLeft() => new()
+    {
+        new() { Index = 1, Left = 0.4, Top = 0.0, Width = 0.6, Height = 1.0 },
+        new() { Index = 2, Left = 0.0, Top = 0.0, Width = 0.4, Height = 1.0 / 3 },
+        new() { Index = 3, Left = 0.0, Top = 1.0 / 3, Width = 0.4, Height = 1.0 / 3 },
+        new() { Index = 4, Left = 0.0, Top = 2.0 / 3, Width = 0.4, Height = 1.0 / 3 },
+    };
+
     private static List<ZoneDefinition> CreateMainWithTwoBottom() => new()
     {
         new() { Index = 1, Left = 0.0, Top = 0.0, Width = 1.0, Height = 0.6 },
         new() { Index = 2, Left = 0.0, Top = 0.6, Width = 0.5, Height = 0.4 },
         new() { Index = 3, Left = 0.5, Top = 0.6, Width = 0.5, Height = 0.4 },
+    };
+
+    private static List<ZoneDefinition> CreateMainWithThreeBottom() => new()
+    {
+        new() { Index = 1, Left = 0.0, Top = 0.0, Width = 1.0, Height = 0.6 },
+        new() { Index = 2, Left = 0.0, Top = 0.6, Width = 1.0 / 3, Height = 0.4 },
+        new() { Index = 3, Left = 1.0 / 3, Top = 0.6, Width = 1.0 / 3, Height = 0.4 },
+        new() { Index = 4, Left = 2.0 / 3, Top = 0.6, Width = 1.0 / 3, Height = 0.4 },
+    };
+
+    private static List<ZoneDefinition> CreateMainWithTwoTop() => new()
+    {
+        new() { Index = 1, Left = 0.0, Top = 0.4, Width = 1.0, Height = 0.6 },
+        new() { Index = 2, Left = 0.0, Top = 0.0, Width = 0.5, Height = 0.4 },
+        new() { Index = 3, Left = 0.5, Top = 0.0, Width = 0.5, Height = 0.4 },
+    };
+
+    private static List<ZoneDefinition> CreateMainWithThreeTop() => new()
+    {
+        new() { Index = 1, Left = 0.0, Top = 0.4, Width = 1.0, Height = 0.6 },
+        new() { Index = 2, Left = 0.0, Top = 0.0, Width = 1.0 / 3, Height = 0.4 },
+        new() { Index = 3, Left = 1.0 / 3, Top = 0.0, Width = 1.0 / 3, Height = 0.4 },
+        new() { Index = 4, Left = 2.0 / 3, Top = 0.0, Width = 1.0 / 3, Height = 0.4 },
     };
 
     private static List<ZoneDefinition> CreateFiveColumn() => new()
