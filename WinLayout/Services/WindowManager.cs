@@ -149,33 +149,35 @@ public class WindowManager
 
         var screenId = GetScreenId(LastSnapTarget);
 
+        // Collect windows to rearrange first, to avoid zone collision within loop
+        var toRearrange = new List<(IntPtr hwnd, int zoneIndex)>();
         for (int i = 0; i < newZones.Count; i++)
         {
             var key = (screenId, i);
-            if (_zoneOccupancy.TryGetValue(key, out var hwnd) && hwnd != IntPtr.Zero)
-            {
-                // Remove old entry and recall SnapWindow with updated zone
-                _zoneOccupancy.Remove(key);
+            if (_zoneOccupancy.TryGetValue(key, out var hwnd) && hwnd != IntPtr.Zero && User32.IsWindow(hwnd))
+                toRearrange.Add((hwnd, i));
+        }
 
-                // Check if window still exists
-                if (User32.IsWindow(hwnd))
-                {
-                    var zone = newZones[i];
-                    SnapWindow(hwnd, new SnapTarget
-                    {
-                        ZoneIndex = i,
-                        ScreenX = screenX,
-                        ScreenY = screenY,
-                        ScreenWidth = screenWidth,
-                        ScreenHeight = screenHeight,
-                        ZoneLeft = zone.Left,
-                        ZoneTop = zone.Top,
-                        ZoneWidth = zone.Width,
-                        ZoneHeight = zone.Height,
-                        Padding = zone.Padding
-                    });
-                }
-            }
+        // Clear old occupancy for all zones on this screen before re-snapping
+        for (int i = 0; i < newZones.Count; i++)
+            _zoneOccupancy.Remove((screenId, i));
+
+        foreach (var (hwnd, i) in toRearrange)
+        {
+            var zone = newZones[i];
+            SnapWindow(hwnd, new SnapTarget
+            {
+                ZoneIndex = i,
+                ScreenX = screenX,
+                ScreenY = screenY,
+                ScreenWidth = screenWidth,
+                ScreenHeight = screenHeight,
+                ZoneLeft = zone.Left,
+                ZoneTop = zone.Top,
+                ZoneWidth = zone.Width,
+                ZoneHeight = zone.Height,
+                Padding = zone.Padding
+            });
         }
     }
 
