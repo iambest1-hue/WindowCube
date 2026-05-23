@@ -278,36 +278,53 @@ public partial class LayoutEditorWindow : Window
         double relY = Math.Clamp(pos.Y / PreviewCanvas.ActualHeight, 0.05, 0.95);
 
         var a = _zones[_zoneA];
-        var b = _zones[_zoneB];
+
+        const double eps = 0.001;
+
+        // Save original values before any modification
+        var orig = _zones.Select(z => (Top: z.Top, Left: z.Left, Width: z.Width, Height: z.Height)).ToList();
 
         if (_isHorizontalSplitter)
         {
-            // Store original values before any modification
-            double origBTop = b.Top;
-            double origBHeight = b.Height;
-            double origBTopPlusHeight = origBTop + origBHeight;
+            double edgeY = a.Top + a.Height;
 
-            double newAHeight = relY - a.Top;
-            double newBTop = relY;
-            double newBHeight = origBTopPlusHeight - newBTop;
-
-            a.Height = Math.Max(0.05, newAHeight);
-            b.Top = newBTop;
-            b.Height = Math.Max(0.05, newBHeight);
+            foreach (var z in _zones)
+            {
+                int i = z.Index - 1;
+                if (Math.Abs(z.Top + z.Height - edgeY) < eps)
+                {
+                    // Zone is above the splitter — adjust height
+                    z.Height = Math.Max(0.05, relY - z.Top);
+                }
+                else if (Math.Abs(z.Top - edgeY) < eps)
+                {
+                    // Zone is below the splitter — adjust top and height
+                    double origBottom = orig[i].Top + orig[i].Height;
+                    z.Top = relY;
+                    z.Height = Math.Max(0.05, origBottom - relY);
+                }
+            }
         }
         else
         {
-            double origBLeft = b.Left;
-            double origBWidth = b.Width;
-            double origBLeftPlusWidth = origBLeft + origBWidth;
+            double edgeX = a.Left + a.Width;
 
-            double newAWidth = relX - a.Left;
-            double newBLeft = relX;
-            double newBWidth = origBLeftPlusWidth - newBLeft;
-
-            a.Width = Math.Max(0.05, newAWidth);
-            b.Left = newBLeft;
-            b.Width = Math.Max(0.05, newBWidth);
+            foreach (var z in _zones)
+            {
+                int i = z.Index - 1;
+                if (Math.Abs(z.Left + z.Width - edgeX) < eps)
+                {
+                    // Zone is to the left of the splitter — adjust width
+                    z.Width = Math.Max(0.05, relX - z.Left);
+                }
+                else if (Math.Abs(z.Left - edgeX) < eps)
+                {
+                    // Zone is to the right of the splitter — adjust left and width
+                    double origRight = orig[i].Left + orig[i].Width;
+                    z.Left = relX;
+                    z.Width = Math.Max(0.05, origRight - relX);
+                }
+            }
         }
 
         RenderPreview();
