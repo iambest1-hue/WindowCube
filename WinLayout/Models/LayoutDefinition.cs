@@ -21,4 +21,7 @@ public class LayoutDefinition
 
     [JsonPropertyName("IsDefault")]
     public bool IsDefault { get; set; }
+
+    [JsonPropertyName("IsFavorite")]
+    public bool IsFavorite { get; set; }
 }

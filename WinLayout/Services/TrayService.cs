@@ -82,6 +82,12 @@ public class TrayService : IDisposable
         RefreshLayoutMenuItems();
     }
 
+    public ContextMenu GetContextMenu()
+    {
+        RefreshLayoutMenuItems();
+        return _trayMenu!;
+    }
+
     public void RefreshLayoutMenuItems()
     {
         if (_trayMenu == null) return;
@@ -91,7 +97,8 @@ public class TrayService : IDisposable
         var layouts = _layoutService.GetAllLayouts().OrderBy(l => l.Zones.Count).ToList();
         var active = _layoutService.GetActiveLayout();
 
-        foreach (var layout in layouts)
+        foreach (var layout in layouts.Where(l =>
+            l.IsFavorite || (active != null && l.LayoutId == active.LayoutId)))
         {
             var header = layout.Name;
             if (active != null && layout.LayoutId == active.LayoutId)

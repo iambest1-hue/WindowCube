@@ -2,7 +2,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Interop;
+using WinLayout.Models;
 using WinLayout.Services;
 using WinLayout.Views;
 
@@ -63,6 +65,7 @@ public partial class MainWindow : Window
         _virtualDesktopService.Start();
 
         UpdateStatus();
+        RefreshFavorites();
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
@@ -78,6 +81,47 @@ public partial class MainWindow : Window
         StatusLabel.Text = layout != null
             ? $"当前布局: {layout.Name} — {modifierText}吸附就绪"
             : $"{modifierText}吸附就绪";
+    }
+
+    private void RefreshFavorites()
+    {
+        var layouts = _layoutService.GetAllLayouts().OrderBy(l => l.Zones.Count).ToList();
+        var items = new List<FrameworkElement>();
+        foreach (var layout in layouts)
+        {
+            var cb = new CheckBox
+            {
+                Content = layout.Name,
+                IsChecked = layout.IsFavorite,
+                Tag = layout.LayoutId,
+                Margin = new Thickness(0, 2, 0, 2)
+            };
+            cb.Checked += OnFavoriteChanged;
+            cb.Unchecked += OnFavoriteChanged;
+            items.Add(cb);
+        }
+        FavoriteList.ItemsSource = items;
+    }
+
+    private void OnShowMenu(object sender, RoutedEventArgs e)
+    {
+        var menu = _trayService!.GetContextMenu();
+        menu.PlacementTarget = sender as UIElement;
+        menu.IsOpen = true;
+    }
+
+    private void OnFavoriteChanged(object sender, RoutedEventArgs e)
+    {
+        if (sender is not CheckBox cb || cb.Tag is not string layoutId)
+            return;
+
+        var layouts = _layoutService.GetAllLayouts();
+        var layout = layouts.FirstOrDefault(l => l.LayoutId == layoutId);
+        if (layout == null) return;
+
+        layout.IsFavorite = cb.IsChecked == true;
+        _layoutService.Save(layout);
+        _trayService!.RefreshLayoutMenuItems();
     }
 
     private bool _isActuallyClosing;
@@ -108,6 +152,7 @@ public partial class MainWindow : Window
         {
             _trayService?.RefreshLayoutMenuItems();
             UpdateStatus();
+            RefreshFavorites();
         };
         editor.ShowDialog();
     }
@@ -217,6 +262,7 @@ public partial class MainWindow : Window
                 }
                 _trayService?.RefreshLayoutMenuItems();
                 UpdateStatus();
+                RefreshFavorites();
                 MessageBox.Show($"已导入 {layouts?.Count ?? 0} 个布局。", "导入成功");
             }
             catch (Exception ex)
