@@ -202,6 +202,13 @@ public class TrayService : IDisposable
                 ShowTrayMenu();
                 handled = true;
             }
+            else if (lParam == (IntPtr)Shell32.WM_LBUTTONDBLCLK)
+            {
+                _mainWindow.Show();
+                _mainWindow.WindowState = WindowState.Normal;
+                _mainWindow.Activate();
+                handled = true;
+            }
         }
         else if (msg == User32.WM_HOTKEY)
         {

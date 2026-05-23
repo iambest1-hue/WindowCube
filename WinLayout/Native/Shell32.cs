@@ -15,6 +15,7 @@ internal static class Shell32
     public const uint WM_TRAYICON = 0x8001;
     public const int WM_RBUTTONUP = 0x0205;
     public const int WM_LBUTTONUP = 0x0202;
+    public const int WM_LBUTTONDBLCLK = 0x0203;
 
     [DllImport("shell32.dll", CharSet = CharSet.Auto)]
     public static extern bool Shell_NotifyIcon(int dwMessage, ref NOTIFYICONDATA lpData);
