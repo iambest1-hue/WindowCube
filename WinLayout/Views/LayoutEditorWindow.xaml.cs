@@ -279,6 +279,7 @@ public partial class LayoutEditorWindow : Window
         double rawY = Math.Clamp(pos.Y / PreviewCanvas.ActualHeight, 0.01, 0.99);
 
         var a = _zones[_zoneA];
+        var b = _zones[_zoneB];
 
         const double eps = 0.001;
         const double minSize = 0.10;
@@ -288,7 +289,9 @@ public partial class LayoutEditorWindow : Window
 
         if (_isHorizontalSplitter)
         {
-            double edgeY = a.Top + a.Height;
+            double edgeY = Math.Abs(a.Top + a.Height - b.Top) < eps
+                ? a.Top + a.Height
+                : a.Top;
 
             // Calculate dynamic valid range to prevent crossing adjacent splitters
             double minY = 0, maxY = 1;
@@ -319,7 +322,9 @@ public partial class LayoutEditorWindow : Window
         }
         else
         {
-            double edgeX = a.Left + a.Width;
+            double edgeX = Math.Abs(a.Left + a.Width - b.Left) < eps
+                ? a.Left + a.Width
+                : a.Left;
 
             // Calculate dynamic valid range to prevent crossing adjacent splitters
             double minX = 0, maxX = 1;
