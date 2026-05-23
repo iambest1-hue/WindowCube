@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using WinLayout;
 using WinLayout.Models;
 using WinLayout.Services;
 
@@ -16,8 +17,6 @@ public partial class LayoutEditorWindow : Window
     private List<ZoneDefinition> _zones = new();
     private LayoutDefinition? _currentLayout;
     private readonly List<FrameworkElement> _zoneVisuals = new();
-
-    public event EventHandler? LayoutDeleted;
 
     private UIElement? _draggingSplitter;
     private bool _isRendering;
@@ -545,7 +544,6 @@ public partial class LayoutEditorWindow : Window
         if (result == MessageBoxResult.Yes)
         {
             _layoutService.Delete(_currentLayout.LayoutId);
-            LayoutDeleted?.Invoke(this, EventArgs.Empty);
             _currentLayout = null;
             _zones.Clear();
             LayoutNameBox.Text = "";
@@ -554,6 +552,8 @@ public partial class LayoutEditorWindow : Window
             RefreshLayoutList();
             LoadPreset(PresetTemplates.All[0]);
             StatusText.Text = "已删除布局";
+
+            (Owner as MainWindow)?.RefreshAll();
         }
     }
 
