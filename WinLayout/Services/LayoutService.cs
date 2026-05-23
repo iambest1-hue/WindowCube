@@ -67,10 +67,21 @@ public class LayoutService
     public LayoutDefinition? GetActiveLayout()
     {
         var config = _config.LoadConfig();
-        if (config.ScreenLayouts.TryGetValue("default", out var screenCfg))
+        if (config.ScreenLayouts.TryGetValue("default", out var screenCfg) &&
+            !string.IsNullOrEmpty(screenCfg.ActiveLayoutId))
         {
             var layouts = _config.LoadAllLayouts();
-            return layouts.FirstOrDefault(l => l.LayoutId == screenCfg.ActiveLayoutId);
+            var active = layouts.FirstOrDefault(l => l.LayoutId == screenCfg.ActiveLayoutId);
+            if (active != null)
+                return active;
+
+            // Active layout was deleted — fall back to first available
+            if (layouts.Count > 0)
+            {
+                screenCfg.ActiveLayoutId = layouts[0].LayoutId;
+                _config.SaveConfig(config);
+                return layouts[0];
+            }
         }
         return GetAllLayouts().FirstOrDefault();
     }
