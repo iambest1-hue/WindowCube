@@ -34,7 +34,9 @@
                 <Button Content="→" Click="OnAddFavorite" Width="36" Height="28"
                         ToolTip="添加到收藏" Margin="0,0,0,5"/>
                 <Button Content="←" Click="OnRemoveFavorite" Width="36" Height="28"
-                        ToolTip="从收藏移除"/>
+                        ToolTip="从收藏移除" Margin="0,0,0,5"/>
+                <Button Content="⊘" Click="OnClearFavorites" Width="36" Height="28"
+                        ToolTip="全部移除（保留第一项）"/>
             </StackPanel>
             <ListBox x:Name="FavoriteLayoutsList" Grid.Column="2" Grid.Row="1"
                      DisplayMemberPath="Name" Height="200"/>

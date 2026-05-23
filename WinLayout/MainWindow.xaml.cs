@@ -105,11 +105,30 @@ public partial class MainWindow : Window
     {
         if (FavoriteLayoutsList.SelectedItem is LayoutDefinition layout)
         {
+            var favorites = _layoutService.GetAllLayouts().Count(l => l.IsFavorite);
+            if (favorites <= 1) return;
+
             layout.IsFavorite = false;
             _layoutService.Save(layout);
             _trayService!.RefreshLayoutMenuItems();
             RefreshLayoutLists();
         }
+    }
+
+    private void OnClearFavorites(object sender, RoutedEventArgs e)
+    {
+        var layouts = _layoutService.GetAllLayouts().OrderBy(l => l.Zones.Count).ToList();
+        var favorites = layouts.Where(l => l.IsFavorite).ToList();
+        if (favorites.Count <= 1) return;
+
+        // Unfavorite all except the first one
+        for (int i = 1; i < favorites.Count; i++)
+        {
+            favorites[i].IsFavorite = false;
+            _layoutService.Save(favorites[i]);
+        }
+        _trayService!.RefreshLayoutMenuItems();
+        RefreshLayoutLists();
     }
 
     private void OnShowMenu(object sender, RoutedEventArgs e)
