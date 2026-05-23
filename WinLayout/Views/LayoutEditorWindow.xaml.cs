@@ -21,6 +21,7 @@ public partial class LayoutEditorWindow : Window
     private bool _isRendering;
     private bool _isHorizontalSplitter;
     private bool _suppressLayoutChanged;
+    private bool _isDirty;
     private int _zoneA, _zoneB;
 
     public LayoutEditorWindow(LayoutService layoutService, ConfigService configService)
@@ -31,6 +32,7 @@ public partial class LayoutEditorWindow : Window
 
         AddHandler(PreviewMouseMoveEvent, (MouseEventHandler)OnDragMouseMove, handledEventsToo: true);
         AddHandler(PreviewMouseLeftButtonUpEvent, (MouseButtonEventHandler)OnDragMouseUp, handledEventsToo: true);
+        LayoutNameBox.TextChanged += (_, _) => _isDirty = true;
 
         RefreshLayoutList();
         LoadCurrentLayout();
@@ -56,6 +58,7 @@ public partial class LayoutEditorWindow : Window
                 Width = z.Width, Height = z.Height, Padding = z.Padding
             }).ToList();
             LayoutNameBox.Text = layout.Name;
+            _isDirty = false;
             RenderPreview();
 
             // Select matching item in combo
@@ -86,6 +89,7 @@ public partial class LayoutEditorWindow : Window
         }).ToList();
         LayoutNameBox.Text = template.Name;
         _currentLayout = null;
+        _isDirty = true;
         RenderPreview();
         StatusText.Text = $"模板: {template.Name}（请修改后保存）";
     }
@@ -242,6 +246,8 @@ public partial class LayoutEditorWindow : Window
         if (_draggingSplitter == null) return;
         if (e.LeftButton != MouseButtonState.Pressed) return;
 
+        _isDirty = true;
+
         // Strip "(默认)" suffix on first move so user sees it in real-time
         if (_currentLayout != null && _currentLayout.IsDefault)
         {
@@ -327,6 +333,7 @@ public partial class LayoutEditorWindow : Window
                 Width = z.Width, Height = z.Height, Padding = z.Padding
             }).ToList();
             LayoutNameBox.Text = layout.Name;
+            _isDirty = false;
             RenderPreview();
             StatusText.Text = $"已加载: {layout.Name}";
         }
@@ -452,6 +459,7 @@ public partial class LayoutEditorWindow : Window
 
         _layoutService.Save(layout);
         _currentLayout = layout;
+        _isDirty = false;
 
         // Verify by reading back
         var verify = _layoutService.GetActiveLayout();
@@ -496,5 +504,33 @@ public partial class LayoutEditorWindow : Window
         if (_isRendering) return;
         if (PreviewCanvas.ActualWidth > 0 && PreviewCanvas.ActualHeight > 0)
             RenderPreview();
+    }
+
+    protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
+    {
+        if (_isDirty)
+        {
+            var result = MessageBox.Show(
+                "当前布局有未保存的更改，是否保存？\n\n是 — 保存后关闭\n否 — 放弃更改并关闭\n取消 — 返回编辑器",
+                "未保存的更改", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+
+            switch (result)
+            {
+                case MessageBoxResult.Yes:
+                    OnSave(this, new RoutedEventArgs());
+                    if (_isDirty) // save was cancelled or failed
+                    {
+                        e.Cancel = true;
+                        return;
+                    }
+                    break;
+                case MessageBoxResult.No:
+                    break;
+                case MessageBoxResult.Cancel:
+                    e.Cancel = true;
+                    break;
+            }
+        }
+        base.OnClosing(e);
     }
 }

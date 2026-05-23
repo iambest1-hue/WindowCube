@@ -21,7 +21,7 @@
                       DisplayMemberPath="Name"
                       SelectionChanged="OnLayoutSelected"/>
             <Separator/>
-            <Button Content="从模板新建" Click="OnNewFromTemplate" Margin="2"/>
+            <Button Content="导入模板" Click="OnNewFromTemplate" Margin="2"/>
             <Button Content="保存" Click="OnSave" Margin="2"/>
             <Button Content="删除" Click="OnDelete" Margin="2"/>
         </StackPanel>
