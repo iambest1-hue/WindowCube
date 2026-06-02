@@ -49,7 +49,7 @@
                 </ListBox>
             </StackPanel>
             <ListBox x:Name="AllLayoutsList" Grid.Column="0" Grid.Row="1"
-                     Height="290" MouseDoubleClick="OnLayoutDoubleClick">
+                     Height="290">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
                         <TextBlock Text="{Binding DisplayName}"/>

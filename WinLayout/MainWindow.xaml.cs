@@ -204,14 +204,11 @@ public partial class MainWindow : Window
     private void OnLayoutDoubleClick(object sender, MouseButtonEventArgs e)
     {
         if ((sender as ListBox)?.SelectedItem is not LayoutListItem item) return;
+        if (sender != PrimaryFavoriteList && sender != SecondaryFavoriteList) return;
 
-        string screenId;
-        if (sender == SecondaryFavoriteList)
-            screenId = _monitorService.GetMonitors().FirstOrDefault(m => !m.IsPrimary)?.ScreenId ?? "default";
-        else if (sender == PrimaryFavoriteList)
-            screenId = _monitorService.GetPrimaryMonitor()?.ScreenId ?? "default";
-        else
-            screenId = _monitorService.GetScreenIdAtCursor();
+        string screenId = sender == SecondaryFavoriteList
+            ? _monitorService.GetMonitors().FirstOrDefault(m => !m.IsPrimary)?.ScreenId ?? "default"
+            : _monitorService.GetPrimaryMonitor()?.ScreenId ?? "default";
 
         _monitorService.SetActiveLayoutForScreen(screenId, item.Layout.LayoutId);
         OnLayoutSwitched(item.Layout.LayoutId);
