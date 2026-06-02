@@ -101,10 +101,9 @@ public partial class MainWindow : Window
     private void RefreshLayoutLists()
     {
         var layouts = _layoutService.GetAllLayouts().OrderBy(l => l.Zones.Count).ToList();
-        var activeLayoutId = _layoutService.GetActiveLayout()?.LayoutId;
 
         string Display(LayoutDefinition l) =>
-            l.LayoutId == activeLayoutId ? $"✓ {l.Name}" : l.Name;
+            IsActiveLayout(l.LayoutId) ? $"✓ {l.Name}" : l.Name;
 
         AllLayoutsList.ItemsSource = layouts
             .Where(l => !l.IsFavorite)
