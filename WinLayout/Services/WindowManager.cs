@@ -23,6 +23,7 @@ public class WindowManager
 {
     // ScreenId -> ZoneIndex -> WindowHandle
     private readonly Dictionary<(string ScreenId, int ZoneIndex), IntPtr> _zoneOccupancy = new();
+    private readonly Dictionary<IntPtr, Native.User32.RECT> _originalRects = new();
 
     public SnapTarget? LastSnapTarget { get; private set; }
 
@@ -30,6 +31,13 @@ public class WindowManager
     {
         // Un-maximize first
         UnmaximizeWindow(hwnd);
+
+        // Save original rect before first snap
+        if (!_originalRects.ContainsKey(hwnd))
+        {
+            User32.GetWindowRect(hwnd, out var origRect);
+            _originalRects[hwnd] = origRect;
+        }
 
         // Remove any old occupancy entries for this window before snapping to new zone
         RemoveWindow(hwnd);
@@ -124,21 +132,34 @@ public class WindowManager
 
     private void DisplaceWindow(IntPtr hwnd, SnapTarget target)
     {
-        // Restore original size and center on screen
-        User32.GetWindowRect(hwnd, out var rect);
-        int windowWidth = rect.Right - rect.Left;
-        int windowHeight = rect.Bottom - rect.Top;
+        int windowWidth, windowHeight;
+        int cx, cy;
 
-        // Clamp to reasonable size if the window is weirdly sized
-        if (windowWidth <= 0 || windowHeight <= 0 ||
-            windowWidth > target.ScreenWidth || windowHeight > target.ScreenHeight)
+        // Try to restore original position and size
+        if (_originalRects.TryGetValue(hwnd, out var orig))
         {
-            windowWidth = 800;
-            windowHeight = 600;
+            windowWidth = orig.Right - orig.Left;
+            windowHeight = orig.Bottom - orig.Top;
+            cx = orig.Left;
+            cy = orig.Top;
+            _originalRects.Remove(hwnd);
         }
+        else
+        {
+            User32.GetWindowRect(hwnd, out var rect);
+            windowWidth = rect.Right - rect.Left;
+            windowHeight = rect.Bottom - rect.Top;
 
-        int cx = target.ScreenX + (target.ScreenWidth - windowWidth) / 2;
-        int cy = target.ScreenY + (target.ScreenHeight - windowHeight) / 2;
+            if (windowWidth <= 0 || windowHeight <= 0 ||
+                windowWidth > target.ScreenWidth || windowHeight > target.ScreenHeight)
+            {
+                windowWidth = 800;
+                windowHeight = 600;
+            }
+
+            cx = target.ScreenX + (target.ScreenWidth - windowWidth) / 2;
+            cy = target.ScreenY + (target.ScreenHeight - windowHeight) / 2;
+        }
 
         User32.SetWindowPos(
             hwnd,
@@ -146,7 +167,7 @@ public class WindowManager
             cx, cy, windowWidth, windowHeight,
             User32.SWP_NOZORDER | User32.SWP_NOACTIVATE | User32.SWP_SHOWWINDOW);
 
-        Debug.WriteLine($"[WindowManager] Displaced 0x{hwnd:X} to center ({cx},{cy})");
+        Debug.WriteLine($"[WindowManager] Displaced 0x{hwnd:X} to ({cx},{cy}) {windowWidth}x{windowHeight}");
     }
 
     public void RearrangeAll(List<ZoneDefinition> newZones, int screenX, int screenY,
@@ -241,6 +262,7 @@ public class WindowManager
         var keys = _zoneOccupancy.Where(kvp => kvp.Value == hwnd).Select(kvp => kvp.Key).ToList();
         foreach (var key in keys)
             _zoneOccupancy.Remove(key);
+        _originalRects.Remove(hwnd);
     }
 
     public IntPtr? GetWindowInZone(string screenId, int zoneIndex)
