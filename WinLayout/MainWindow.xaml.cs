@@ -112,14 +112,19 @@ public partial class MainWindow : Window
         var secondaryFavIds = secondaryId != null
             ? _monitorService.GetFavoriteIdsForScreen(secondaryId) : new List<string>();
 
-        var allFavIds = new HashSet<string>(primaryFavIds.Concat(secondaryFavIds));
+        var visibleFavIds = new List<List<string>> { primaryFavIds };
+        if (secondaryId != null) visibleFavIds.Add(secondaryFavIds);
+        // Only hide from all-layouts if favorited on every visible screen
+        var hiddenIds = new HashSet<string>(visibleFavIds[0]);
+        for (int i = 1; i < visibleFavIds.Count; i++)
+            hiddenIds.IntersectWith(visibleFavIds[i]);
 
         string Display(LayoutDefinition l, string screenId) =>
             _monitorService.GetActiveLayoutForScreen(screenId)?.LayoutId == l.LayoutId
                 ? $"✓ {l.Name}" : l.Name;
 
         AllLayoutsList.ItemsSource = layouts
-            .Where(l => !allFavIds.Contains(l.LayoutId))
+            .Where(l => !hiddenIds.Contains(l.LayoutId))
             .Select(l => new LayoutListItem(Display(l, primaryId), l))
             .ToList();
 
