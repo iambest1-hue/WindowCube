@@ -51,12 +51,20 @@ public class LayoutService
         if (layouts.Count > 0)
         {
             var userConfig = _config.LoadConfig();
-            if (!userConfig.ScreenLayouts.ContainsKey("default") ||
-                string.IsNullOrEmpty(userConfig.ScreenLayouts["default"].ActiveLayoutId))
+            if (!userConfig.ScreenLayouts.ContainsKey("default"))
+                userConfig.ScreenLayouts["default"] = new ScreenLayoutConfig();
+            var sc = userConfig.ScreenLayouts["default"];
+
+            if (string.IsNullOrEmpty(sc.ActiveLayoutId))
             {
-                if (!userConfig.ScreenLayouts.ContainsKey("default"))
-                    userConfig.ScreenLayouts["default"] = new ScreenLayoutConfig();
-                userConfig.ScreenLayouts["default"].ActiveLayoutId = layouts[0].LayoutId;
+                sc.ActiveLayoutId = layouts[0].LayoutId;
+                _config.SaveConfig(userConfig);
+            }
+
+            // Seed per-screen favorites if empty (first run or upgrade)
+            if (sc.FavoriteLayoutIds.Count == 0)
+            {
+                sc.FavoriteLayoutIds = layouts.Select(l => l.LayoutId).ToList();
                 _config.SaveConfig(userConfig);
             }
         }

@@ -101,26 +101,55 @@ public partial class MainWindow : Window
     private void RefreshLayoutLists()
     {
         var layouts = _layoutService.GetAllLayouts().OrderBy(l => l.Zones.Count).ToList();
+        var monitors = _monitorService.GetMonitors();
+        var primary = monitors.FirstOrDefault(m => m.IsPrimary);
+        var secondary = monitors.FirstOrDefault(m => !m.IsPrimary);
 
-        string Display(LayoutDefinition l) =>
-            IsActiveLayout(l.LayoutId) ? $"✓ {l.Name}" : l.Name;
+        var primaryId = primary?.ScreenId ?? "default";
+        var secondaryId = secondary?.ScreenId;
+
+        var primaryFavIds = _monitorService.GetFavoriteIdsForScreen(primaryId);
+        var secondaryFavIds = secondaryId != null
+            ? _monitorService.GetFavoriteIdsForScreen(secondaryId) : new List<string>();
+
+        var allFavIds = new HashSet<string>(primaryFavIds.Concat(secondaryFavIds));
+
+        string Display(LayoutDefinition l, string screenId) =>
+            _monitorService.GetActiveLayoutForScreen(screenId)?.LayoutId == l.LayoutId
+                ? $"✓ {l.Name}" : l.Name;
 
         AllLayoutsList.ItemsSource = layouts
-            .Where(l => !l.IsFavorite)
-            .Select(l => new LayoutListItem(Display(l), l))
+            .Where(l => !allFavIds.Contains(l.LayoutId))
+            .Select(l => new LayoutListItem(Display(l, primaryId), l))
             .ToList();
-        FavoriteLayoutsList.ItemsSource = layouts
-            .Where(l => l.IsFavorite)
-            .Select(l => new LayoutListItem(Display(l), l))
+
+        PrimaryFavoriteList.ItemsSource = layouts
+            .Where(l => primaryFavIds.Contains(l.LayoutId))
+            .Select(l => new LayoutListItem(Display(l, primaryId), l))
             .ToList();
+
+        if (secondaryId != null)
+        {
+            SecondaryFavLabel.Visibility = Visibility.Visible;
+            SecondaryFavoriteList.Visibility = Visibility.Visible;
+            SecondaryFavoriteList.ItemsSource = layouts
+                .Where(l => secondaryFavIds.Contains(l.LayoutId))
+                .Select(l => new LayoutListItem(Display(l, secondaryId), l))
+                .ToList();
+        }
+        else
+        {
+            SecondaryFavLabel.Visibility = Visibility.Collapsed;
+            SecondaryFavoriteList.Visibility = Visibility.Collapsed;
+        }
     }
 
     private void OnAddFavorite(object sender, RoutedEventArgs e)
     {
         if ((AllLayoutsList.SelectedItem as LayoutListItem)?.Layout is LayoutDefinition layout)
         {
-            layout.IsFavorite = true;
-            _layoutService.Save(layout);
+            var primaryId = _monitorService.GetPrimaryMonitor()?.ScreenId ?? "default";
+            _monitorService.SetFavoriteForScreen(primaryId, layout.LayoutId, true);
             _trayService!.RefreshLayoutMenuItems();
             RefreshLayoutLists();
         }
@@ -128,25 +157,37 @@ public partial class MainWindow : Window
 
     private void OnRemoveFavorite(object sender, RoutedEventArgs e)
     {
-        if ((FavoriteLayoutsList.SelectedItem as LayoutListItem)?.Layout is LayoutDefinition layout)
+        LayoutDefinition? layout = null;
+        string? screenId = null;
+
+        if ((PrimaryFavoriteList.SelectedItem as LayoutListItem)?.Layout is LayoutDefinition pl)
         {
-            if (IsActiveLayout(layout.LayoutId))
-            {
-                System.Windows.MessageBox.Show(
-                    $"布局 \"{layout.Name}\" 当前正在使用中，不能取消收藏。\n请先切换到其他布局。",
-                    "无法移除", System.Windows.MessageBoxButton.OK,
-                    System.Windows.MessageBoxImage.Warning);
-                return;
-            }
-
-            var favorites = _layoutService.GetAllLayouts().Count(l => l.IsFavorite);
-            if (favorites <= 1) return;
-
-            layout.IsFavorite = false;
-            _layoutService.Save(layout);
-            _trayService!.RefreshLayoutMenuItems();
-            RefreshLayoutLists();
+            layout = pl;
+            screenId = _monitorService.GetPrimaryMonitor()?.ScreenId ?? "default";
         }
+        else if ((SecondaryFavoriteList.SelectedItem as LayoutListItem)?.Layout is LayoutDefinition sl)
+        {
+            layout = sl;
+            screenId = _monitorService.GetMonitors().FirstOrDefault(m => !m.IsPrimary)?.ScreenId;
+        }
+
+        if (layout == null || screenId == null) return;
+
+        if (_monitorService.GetActiveLayoutForScreen(screenId)?.LayoutId == layout.LayoutId)
+        {
+            System.Windows.MessageBox.Show(
+                $"布局 \"{layout.Name}\" 当前正在使用中，不能取消收藏。\n请先切换到其他布局。",
+                "无法移除", System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Warning);
+            return;
+        }
+
+        var favIds = _monitorService.GetFavoriteIdsForScreen(screenId);
+        if (favIds.Count <= 1) return;
+
+        _monitorService.SetFavoriteForScreen(screenId, layout.LayoutId, false);
+        _trayService!.RefreshLayoutMenuItems();
+        RefreshLayoutLists();
     }
 
     private bool IsActiveLayout(string layoutId)
@@ -162,26 +203,36 @@ public partial class MainWindow : Window
 
     private void OnLayoutDoubleClick(object sender, MouseButtonEventArgs e)
     {
-        if ((sender as ListBox)?.SelectedItem is LayoutListItem item)
-        {
-            var screenId = _monitorService.GetScreenIdAtCursor();
-            _monitorService.SetActiveLayoutForScreen(screenId, item.Layout.LayoutId);
-            OnLayoutSwitched(item.Layout.LayoutId);
-        }
+        if ((sender as ListBox)?.SelectedItem is not LayoutListItem item) return;
+
+        string screenId;
+        if (sender == SecondaryFavoriteList)
+            screenId = _monitorService.GetMonitors().FirstOrDefault(m => !m.IsPrimary)?.ScreenId ?? "default";
+        else if (sender == PrimaryFavoriteList)
+            screenId = _monitorService.GetPrimaryMonitor()?.ScreenId ?? "default";
+        else
+            screenId = _monitorService.GetScreenIdAtCursor();
+
+        _monitorService.SetActiveLayoutForScreen(screenId, item.Layout.LayoutId);
+        OnLayoutSwitched(item.Layout.LayoutId);
     }
 
     private void OnClearFavorites(object sender, RoutedEventArgs e)
     {
-        var layouts = _layoutService.GetAllLayouts().OrderBy(l => l.Zones.Count).ToList();
-        var favorites = layouts.Where(l => l.IsFavorite).ToList();
-        if (favorites.Count <= 1) return;
+        var primaryId = _monitorService.GetPrimaryMonitor()?.ScreenId ?? "default";
+        var favIds = _monitorService.GetFavoriteIdsForScreen(primaryId);
+        if (favIds.Count <= 1) return;
 
-        for (int i = 1; i < favorites.Count; i++)
+        var activeId = _monitorService.GetActiveLayoutForScreen(primaryId)?.LayoutId;
+        for (int i = favIds.Count - 1; i >= 0; i--)
         {
-            if (IsActiveLayout(favorites[i].LayoutId)) continue;
-            favorites[i].IsFavorite = false;
-            _layoutService.Save(favorites[i]);
+            if (favIds[i] == activeId) continue;
+            _monitorService.SetFavoriteForScreen(primaryId, favIds[i], false);
         }
+        // Ensure at least one remains
+        if (_monitorService.GetFavoriteIdsForScreen(primaryId).Count == 0 && favIds.Count > 0)
+            _monitorService.SetFavoriteForScreen(primaryId, favIds[0], true);
+
         _trayService!.RefreshLayoutMenuItems();
         RefreshLayoutLists();
     }

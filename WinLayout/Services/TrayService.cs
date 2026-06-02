@@ -97,23 +97,35 @@ public class TrayService : IDisposable
         _trayMenu.Items.Clear();
 
         var layouts = _layoutService.GetAllLayouts().OrderBy(l => l.Zones.Count).ToList();
-        var active = _monitorService.GetActiveLayoutForScreen(_currentMenuScreenId);
+        var monitors = _monitorService.GetMonitors();
 
-        foreach (var layout in layouts.Where(l => l.IsFavorite))
+        foreach (var monitor in monitors)
         {
-            var header = layout.Name;
-            if (active != null && layout.LayoutId == active.LayoutId)
-                header = "✓ " + header;
+            var screenId = monitor.ScreenId;
+            var active = _monitorService.GetActiveLayoutForScreen(screenId);
+            var favIds = _monitorService.GetFavoriteIdsForScreen(screenId);
+            var screenFavs = layouts.Where(l => favIds.Contains(l.LayoutId)).ToList();
 
-            var item = new MenuItem { Header = header, Tag = layout.LayoutId };
-            var capturedScreenId = _currentMenuScreenId;
-            item.Click += (_, _) =>
+            var subMenu = new MenuItem { Header = $"{monitor.DisplayLabel}布局" };
+            foreach (var layout in screenFavs)
             {
-                _monitorService.SetActiveLayoutForScreen(capturedScreenId, layout.LayoutId);
-                LayoutSwitchRequested?.Invoke(this, layout.LayoutId);
-                RefreshLayoutMenuItems();
-            };
-            _trayMenu.Items.Add(item);
+                var header = layout.Name;
+                if (active != null && layout.LayoutId == active.LayoutId)
+                    header = "✓ " + header;
+
+                var item = new MenuItem { Header = header, Tag = layout.LayoutId };
+                var capturedId = screenId;
+                item.Click += (_, _) =>
+                {
+                    _monitorService.SetActiveLayoutForScreen(capturedId, layout.LayoutId);
+                    LayoutSwitchRequested?.Invoke(this, layout.LayoutId);
+                    RefreshLayoutMenuItems();
+                };
+                subMenu.Items.Add(item);
+            }
+            if (subMenu.Items.Count == 0)
+                subMenu.Items.Add(new MenuItem { Header = "(无收藏)", IsEnabled = false });
+            _trayMenu.Items.Add(subMenu);
         }
 
         _trayMenu.Items.Add(new Separator());
@@ -226,11 +238,13 @@ public class TrayService : IDisposable
             if (hotkeyId >= 9000 && hotkeyId < 9009)
             {
                 int layoutIndex = hotkeyId - 9000;
-                var layouts = _layoutService.GetAllLayouts();
+                var screenId = _monitorService.GetScreenIdAtCursor();
+                var favIds = _monitorService.GetFavoriteIdsForScreen(screenId);
+                var allLayouts = _layoutService.GetAllLayouts();
+                var layouts = allLayouts.Where(l => favIds.Contains(l.LayoutId)).ToList();
                 if (layoutIndex < layouts.Count)
                 {
                     var layout = layouts[layoutIndex];
-                    var screenId = _monitorService.GetScreenIdAtCursor();
                     _monitorService.SetActiveLayoutForScreen(screenId, layout.LayoutId);
                     LayoutSwitchRequested?.Invoke(this, layout.LayoutId);
                     RefreshLayoutMenuItems();

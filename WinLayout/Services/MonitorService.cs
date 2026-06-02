@@ -97,6 +97,35 @@ public class MonitorService
         _configService.SaveConfig(config);
     }
 
+    public bool IsFavoriteForScreen(string screenId, string layoutId)
+    {
+        var config = _configService.LoadConfig();
+        if (config.ScreenLayouts.TryGetValue(screenId, out var sc))
+            return sc.FavoriteLayoutIds.Contains(layoutId);
+        return false;
+    }
+
+    public void SetFavoriteForScreen(string screenId, string layoutId, bool isFavorite)
+    {
+        var config = _configService.LoadConfig();
+        if (!config.ScreenLayouts.ContainsKey(screenId))
+            config.ScreenLayouts[screenId] = new ScreenLayoutConfig();
+        var list = config.ScreenLayouts[screenId].FavoriteLayoutIds;
+        if (isFavorite && !list.Contains(layoutId))
+            list.Add(layoutId);
+        else if (!isFavorite)
+            list.Remove(layoutId);
+        _configService.SaveConfig(config);
+    }
+
+    public List<string> GetFavoriteIdsForScreen(string screenId)
+    {
+        var config = _configService.LoadConfig();
+        if (config.ScreenLayouts.TryGetValue(screenId, out var sc))
+            return sc.FavoriteLayoutIds;
+        return new List<string>();
+    }
+
     private void EnumerateMonitors()
     {
         _monitors.Clear();

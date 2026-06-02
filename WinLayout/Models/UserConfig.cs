@@ -55,6 +55,9 @@ public class ScreenLayoutConfig
     [JsonPropertyName("ActiveLayoutId")]
     public string ActiveLayoutId { get; set; } = string.Empty;
 
+    [JsonPropertyName("FavoriteLayoutIds")]
+    public List<string> FavoriteLayoutIds { get; set; } = new();
+
     [JsonPropertyName("DesktopLayouts")]
     public Dictionary<string, string> DesktopLayouts { get; set; } = new();
 }
