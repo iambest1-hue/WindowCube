@@ -154,7 +154,9 @@ public class MonitorService
                 mi.cbSize = System.Runtime.InteropServices.Marshal.SizeOf(mi);
                 if (User32.GetMonitorInfo(hMonitor, ref mi))
                 {
-                    var screenId = GetScreenId(hMonitor, rect);
+                    var baseId = GetScreenId(hMonitor, rect);
+                    var isPrimary = (mi.dwFlags & User32.MONITORINFOF_PRIMARY) != 0;
+                    var screenId = baseId + (isPrimary ? "_p" : "_s");
                     _monitors.Add(new MonitorInfo
                     {
                         ScreenId = screenId,
@@ -162,8 +164,8 @@ public class MonitorService
                         Y = mi.rcMonitor.Top,
                         Width = mi.rcMonitor.Right - mi.rcMonitor.Left,
                         Height = mi.rcMonitor.Bottom - mi.rcMonitor.Top,
-                        DeviceName = screenId,
-                        IsPrimary = (mi.dwFlags & User32.MONITORINFOF_PRIMARY) != 0
+                        DeviceName = baseId,
+                        IsPrimary = isPrimary
                     });
                 }
                 return true;
