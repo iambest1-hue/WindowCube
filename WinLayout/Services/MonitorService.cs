@@ -118,10 +118,27 @@ public class MonitorService
         _configService.SaveConfig(config);
     }
 
+    public void SeedScreenFavoritesIfEmpty()
+    {
+        var config = _configService.LoadConfig();
+        foreach (var monitor in _monitors)
+        {
+            if (!config.ScreenLayouts.ContainsKey(monitor.ScreenId))
+                config.ScreenLayouts[monitor.ScreenId] = new ScreenLayoutConfig();
+            if (config.ScreenLayouts[monitor.ScreenId].FavoriteLayoutIds.Count == 0)
+            {
+                var layouts = _layoutService.GetAllLayouts();
+                config.ScreenLayouts[monitor.ScreenId].FavoriteLayoutIds =
+                    layouts.Where(l => l.IsFavorite).Select(l => l.LayoutId).ToList();
+            }
+        }
+        _configService.SaveConfig(config);
+    }
+
     public List<string> GetFavoriteIdsForScreen(string screenId)
     {
         var config = _configService.LoadConfig();
-        if (config.ScreenLayouts.TryGetValue(screenId, out var sc))
+        if (config.ScreenLayouts.TryGetValue(screenId, out var sc) && sc.FavoriteLayoutIds.Count > 0)
             return sc.FavoriteLayoutIds;
         return new List<string>();
     }

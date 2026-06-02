@@ -65,6 +65,7 @@ public partial class MainWindow : Window
         };
         _virtualDesktopService.Start();
 
+        _monitorService.SeedScreenFavoritesIfEmpty();
         UpdateStatus();
         RefreshLayoutLists();
     }
