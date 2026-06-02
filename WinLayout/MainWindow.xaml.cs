@@ -96,16 +96,29 @@ public partial class MainWindow : Window
         }
     }
 
+    private record LayoutListItem(string DisplayName, LayoutDefinition Layout);
+
     private void RefreshLayoutLists()
     {
         var layouts = _layoutService.GetAllLayouts().OrderBy(l => l.Zones.Count).ToList();
-        AllLayoutsList.ItemsSource = layouts.Where(l => !l.IsFavorite).ToList();
-        FavoriteLayoutsList.ItemsSource = layouts.Where(l => l.IsFavorite).ToList();
+        var activeLayoutId = _layoutService.GetActiveLayout()?.LayoutId;
+
+        string Display(LayoutDefinition l) =>
+            l.LayoutId == activeLayoutId ? $"✓ {l.Name}" : l.Name;
+
+        AllLayoutsList.ItemsSource = layouts
+            .Where(l => !l.IsFavorite)
+            .Select(l => new LayoutListItem(Display(l), l))
+            .ToList();
+        FavoriteLayoutsList.ItemsSource = layouts
+            .Where(l => l.IsFavorite)
+            .Select(l => new LayoutListItem(Display(l), l))
+            .ToList();
     }
 
     private void OnAddFavorite(object sender, RoutedEventArgs e)
     {
-        if (AllLayoutsList.SelectedItem is LayoutDefinition layout)
+        if ((AllLayoutsList.SelectedItem as LayoutListItem)?.Layout is LayoutDefinition layout)
         {
             layout.IsFavorite = true;
             _layoutService.Save(layout);
@@ -116,7 +129,7 @@ public partial class MainWindow : Window
 
     private void OnRemoveFavorite(object sender, RoutedEventArgs e)
     {
-        if (FavoriteLayoutsList.SelectedItem is LayoutDefinition layout)
+        if ((FavoriteLayoutsList.SelectedItem as LayoutListItem)?.Layout is LayoutDefinition layout)
         {
             if (IsActiveLayout(layout.LayoutId))
             {
@@ -150,12 +163,12 @@ public partial class MainWindow : Window
 
     private void OnLayoutDoubleClick(object sender, MouseButtonEventArgs e)
     {
-        if ((sender as ListBox)?.SelectedItem is not LayoutDefinition layout)
-            return;
-
-        var screenId = _monitorService.GetScreenIdAtCursor();
-        _monitorService.SetActiveLayoutForScreen(screenId, layout.LayoutId);
-        OnLayoutSwitched(layout.LayoutId);
+        if ((sender as ListBox)?.SelectedItem is LayoutListItem item)
+        {
+            var screenId = _monitorService.GetScreenIdAtCursor();
+            _monitorService.SetActiveLayoutForScreen(screenId, item.Layout.LayoutId);
+            OnLayoutSwitched(item.Layout.LayoutId);
+        }
     }
 
     private void OnClearFavorites(object sender, RoutedEventArgs e)
@@ -164,7 +177,6 @@ public partial class MainWindow : Window
         var favorites = layouts.Where(l => l.IsFavorite).ToList();
         if (favorites.Count <= 1) return;
 
-        // Unfavorite all except the first one, skip active layouts
         for (int i = 1; i < favorites.Count; i++)
         {
             if (IsActiveLayout(favorites[i].LayoutId)) continue;
