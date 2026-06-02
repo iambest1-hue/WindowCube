@@ -118,6 +118,15 @@ public partial class MainWindow : Window
     {
         if (FavoriteLayoutsList.SelectedItem is LayoutDefinition layout)
         {
+            if (IsActiveLayout(layout.LayoutId))
+            {
+                System.Windows.MessageBox.Show(
+                    $"布局 \"{layout.Name}\" 当前正在使用中，不能取消收藏。\n请先切换到其他布局。",
+                    "无法移除", System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Warning);
+                return;
+            }
+
             var favorites = _layoutService.GetAllLayouts().Count(l => l.IsFavorite);
             if (favorites <= 1) return;
 
@@ -126,6 +135,17 @@ public partial class MainWindow : Window
             _trayService!.RefreshLayoutMenuItems();
             RefreshLayoutLists();
         }
+    }
+
+    private bool IsActiveLayout(string layoutId)
+    {
+        foreach (var monitor in _monitorService.GetMonitors())
+        {
+            var active = _monitorService.GetActiveLayoutForScreen(monitor.ScreenId);
+            if (active != null && active.LayoutId == layoutId)
+                return true;
+        }
+        return false;
     }
 
     private void OnLayoutDoubleClick(object sender, MouseButtonEventArgs e)
@@ -144,9 +164,10 @@ public partial class MainWindow : Window
         var favorites = layouts.Where(l => l.IsFavorite).ToList();
         if (favorites.Count <= 1) return;
 
-        // Unfavorite all except the first one
+        // Unfavorite all except the first one, skip active layouts
         for (int i = 1; i < favorites.Count; i++)
         {
+            if (IsActiveLayout(favorites[i].LayoutId)) continue;
             favorites[i].IsFavorite = false;
             _layoutService.Save(favorites[i]);
         }
