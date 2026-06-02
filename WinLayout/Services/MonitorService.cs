@@ -13,6 +13,8 @@ public class MonitorInfo
     public int Width { get; init; }
     public int Height { get; init; }
     public string DeviceName { get; init; } = "";
+    public bool IsPrimary { get; init; }
+    public string DisplayLabel => IsPrimary ? "主屏" : "副屏";
 }
 
 public class MonitorService
@@ -66,6 +68,14 @@ public class MonitorService
         return _monitors.FirstOrDefault();
     }
 
+    public string GetScreenIdAtCursor()
+    {
+        User32.GetCursorPos(out var cursor);
+        return GetMonitorAtCursor(cursor.X, cursor.Y)?.ScreenId ?? "default";
+    }
+
+    public MonitorInfo? GetPrimaryMonitor() => _monitors.FirstOrDefault(m => m.IsPrimary);
+
     public LayoutDefinition? GetActiveLayoutForScreen(string screenId)
     {
         var config = _configService.LoadConfig();
@@ -106,7 +116,8 @@ public class MonitorService
                         Y = mi.rcMonitor.Top,
                         Width = mi.rcMonitor.Right - mi.rcMonitor.Left,
                         Height = mi.rcMonitor.Bottom - mi.rcMonitor.Top,
-                        DeviceName = screenId
+                        DeviceName = screenId,
+                        IsPrimary = (mi.dwFlags & User32.MONITORINFOF_PRIMARY) != 0
                     });
                 }
                 return true;

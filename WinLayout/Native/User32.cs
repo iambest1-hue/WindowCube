@@ -184,6 +184,8 @@ internal static class User32
         public int Bottom;
     }
 
+    public const int MONITORINFOF_PRIMARY = 1;
+
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
     public struct MONITORINFO
     {

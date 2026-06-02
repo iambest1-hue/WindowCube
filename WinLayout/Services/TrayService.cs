@@ -23,6 +23,8 @@ public class TrayService : IDisposable
     private bool _isPaused;
     private ContextMenu? _trayMenu;
 
+    private string _currentMenuScreenId = "default";
+
     public event EventHandler? OpenEditorRequested;
     public event EventHandler? OpenSettingsRequested;
     public event EventHandler<string>? LayoutSwitchRequested;
@@ -95,7 +97,7 @@ public class TrayService : IDisposable
         _trayMenu.Items.Clear();
 
         var layouts = _layoutService.GetAllLayouts().OrderBy(l => l.Zones.Count).ToList();
-        var active = _layoutService.GetActiveLayout();
+        var active = _monitorService.GetActiveLayoutForScreen(_currentMenuScreenId);
 
         foreach (var layout in layouts.Where(l => l.IsFavorite))
         {
@@ -104,9 +106,10 @@ public class TrayService : IDisposable
                 header = "✓ " + header;
 
             var item = new MenuItem { Header = header, Tag = layout.LayoutId };
+            var capturedScreenId = _currentMenuScreenId;
             item.Click += (_, _) =>
             {
-                _layoutService.SetActive(layout.LayoutId);
+                _monitorService.SetActiveLayoutForScreen(capturedScreenId, layout.LayoutId);
                 LayoutSwitchRequested?.Invoke(this, layout.LayoutId);
                 RefreshLayoutMenuItems();
             };
@@ -227,7 +230,8 @@ public class TrayService : IDisposable
                 if (layoutIndex < layouts.Count)
                 {
                     var layout = layouts[layoutIndex];
-                    _layoutService.SetActive(layout.LayoutId);
+                    var screenId = _monitorService.GetScreenIdAtCursor();
+                    _monitorService.SetActiveLayoutForScreen(screenId, layout.LayoutId);
                     LayoutSwitchRequested?.Invoke(this, layout.LayoutId);
                     RefreshLayoutMenuItems();
                 }
@@ -241,6 +245,7 @@ public class TrayService : IDisposable
     {
         if (_trayMenu == null) return;
 
+        _currentMenuScreenId = _monitorService.GetScreenIdAtCursor();
         RefreshLayoutMenuItems();
         _trayMenu.IsOpen = true;
     }

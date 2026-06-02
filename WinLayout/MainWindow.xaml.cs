@@ -76,12 +76,24 @@ public partial class MainWindow : Window
 
     private void UpdateStatus()
     {
-        var layout = _layoutService.GetActiveLayout();
         var config = _configService.LoadConfig();
         var modifierText = config.ModifierKey == "None" ? "直接拖拽" : config.ModifierKey + "+拖拽";
-        StatusLabel.Text = layout != null
-            ? $"当前布局: {layout.Name} — {modifierText}吸附就绪"
-            : $"{modifierText}吸附就绪";
+
+        var primary = _monitorService.GetPrimaryMonitor();
+        if (primary != null)
+        {
+            var primaryLayout = _monitorService.GetActiveLayoutForScreen(primary.ScreenId);
+            StatusLabel.Text = primaryLayout != null
+                ? $"主屏: {primaryLayout.Name} — {modifierText}吸附就绪"
+                : $"{modifierText}吸附就绪";
+        }
+        else
+        {
+            var layout = _layoutService.GetActiveLayout();
+            StatusLabel.Text = layout != null
+                ? $"当前布局: {layout.Name} — {modifierText}吸附就绪"
+                : $"{modifierText}吸附就绪";
+        }
     }
 
     private void RefreshLayoutLists()
@@ -121,7 +133,8 @@ public partial class MainWindow : Window
         if ((sender as ListBox)?.SelectedItem is not LayoutDefinition layout)
             return;
 
-        _layoutService.SetActive(layout.LayoutId);
+        var screenId = _monitorService.GetScreenIdAtCursor();
+        _monitorService.SetActiveLayoutForScreen(screenId, layout.LayoutId);
         OnLayoutSwitched(layout.LayoutId);
     }
 
@@ -230,13 +243,15 @@ public partial class MainWindow : Window
 
     private void OnQuickFill()
     {
-        var layout = _layoutService.GetActiveLayout();
-        if (layout == null || _windowManager.LastSnapTarget == null) return;
+        var monitors = _monitorService.GetMonitors();
+        foreach (var monitor in monitors)
+        {
+            var layout = _monitorService.GetActiveLayoutForScreen(monitor.ScreenId);
+            if (layout == null) continue;
 
-        var lastTarget = _windowManager.LastSnapTarget;
-        _windowManager.QuickFill(layout.Zones,
-            lastTarget.ScreenX, lastTarget.ScreenY,
-            lastTarget.ScreenWidth, lastTarget.ScreenHeight);
+            _windowManager.QuickFill(layout.Zones,
+                monitor.X, monitor.Y, monitor.Width, monitor.Height);
+        }
     }
 
     private void OnLayoutSwitched(string layoutId)
@@ -244,10 +259,15 @@ public partial class MainWindow : Window
         UpdateStatus();
         RefreshLayoutLists();
 
-        var layout = _layoutService.GetActiveLayout();
-        if (layout == null || _windowManager.LastSnapTarget == null) return;
+        if (_windowManager.LastSnapTarget == null) return;
 
         var lastTarget = _windowManager.LastSnapTarget;
+        var screen = _monitorService.GetMonitorAtCursor(lastTarget.ScreenX, lastTarget.ScreenY);
+        var layout = screen != null
+            ? _monitorService.GetActiveLayoutForScreen(screen.ScreenId)
+            : _layoutService.GetActiveLayout();
+        if (layout == null) return;
+
         _windowManager.RearrangeAll(layout.Zones,
             lastTarget.ScreenX, lastTarget.ScreenY,
             lastTarget.ScreenWidth, lastTarget.ScreenHeight);
