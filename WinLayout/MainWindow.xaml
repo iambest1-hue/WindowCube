@@ -1,7 +1,7 @@
 <Window x:Class="WinLayout.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="WinLayout" Height="500" Width="580"
+        Title="WinLayout" Height="480" Width="580"
         WindowStartupLocation="CenterScreen">
     <StackPanel Margin="20">
         <TextBlock Text="WinLayout — 窗口吸附布局管理器"
@@ -20,11 +20,10 @@
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="36"/>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="36"/>
+                <ColumnDefinition Width="40"/>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="36"/>
+                <ColumnDefinition Width="40"/>
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -33,8 +32,10 @@
 
             <!-- Headers -->
             <TextBlock Text="全部布局" FontWeight="Bold" Grid.Column="0" Grid.Row="0" Margin="0,0,0,3"/>
-            <TextBlock Text="收藏 (主屏)" FontWeight="Bold" Grid.Column="2" Grid.Row="0" Margin="0,0,0,3"/>
-            <TextBlock x:Name="SecondaryHeader" Text="收藏 (副屏)" FontWeight="Bold" Grid.Column="4" Grid.Row="0" Margin="0,0,0,3" Visibility="Collapsed"/>
+            <TextBlock Text="收藏 (主屏)" FontWeight="Bold" Grid.Column="1" Grid.Row="0" Margin="0,0,0,3"/>
+            <TextBlock Text="" Grid.Column="2" Grid.Row="0"/>
+            <TextBlock x:Name="SecondaryHeader" Text="收藏 (副屏)" FontWeight="Bold" Grid.Column="3" Grid.Row="0" Margin="0,0,0,3" Visibility="Collapsed"/>
+            <TextBlock x:Name="SecondaryHeaderSpacer" Grid.Column="4" Grid.Row="0" Visibility="Collapsed"/>
 
             <!-- All layouts -->
             <ListBox x:Name="AllLayoutsList" Grid.Column="0" Grid.Row="1" Height="300">
@@ -45,16 +46,8 @@
                 </ListBox.ItemTemplate>
             </ListBox>
 
-            <!-- Add arrows -->
-            <StackPanel Grid.Column="1" Grid.Row="1" VerticalAlignment="Top" Margin="4,50,4,0">
-                <Button Content="→" Click="OnAddPrimary" Width="28" Height="28"
-                        ToolTip="添加到主屏" Margin="0,0,0,6"/>
-                <Button x:Name="AddSecondaryBtn" Content="→" Click="OnAddSecondary"
-                        Width="28" Height="28" ToolTip="添加到副屏" Visibility="Collapsed"/>
-            </StackPanel>
-
             <!-- Primary favorites -->
-            <ListBox x:Name="PrimaryFavoriteList" Grid.Column="2" Grid.Row="1" Height="300"
+            <ListBox x:Name="PrimaryFavoriteList" Grid.Column="1" Grid.Row="1" Height="300"
                      MouseDoubleClick="OnLayoutDoubleClick">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
@@ -63,16 +56,18 @@
                 </ListBox.ItemTemplate>
             </ListBox>
 
-            <!-- Primary remove/clear -->
-            <StackPanel Grid.Column="3" Grid.Row="1" VerticalAlignment="Top" Margin="4,50,0,0">
-                <Button Content="←" Click="OnRemovePrimary" Width="28" Height="28"
+            <!-- Primary buttons: ← ⊘ → -->
+            <StackPanel Grid.Column="2" Grid.Row="1" VerticalAlignment="Top" Margin="4,50,4,0">
+                <Button Content="→" Click="OnAddPrimary" Width="30" Height="30"
+                        ToolTip="添加到主屏" Margin="0,0,0,6"/>
+                <Button Content="←" Click="OnRemovePrimary" Width="30" Height="30"
                         ToolTip="从主屏移除" Margin="0,0,0,6"/>
-                <Button Content="⊘" Click="OnClearPrimary" Width="28" Height="28"
+                <Button Content="⊘" Click="OnClearPrimary" Width="30" Height="30"
                         ToolTip="清空主屏"/>
             </StackPanel>
 
             <!-- Secondary favorites -->
-            <ListBox x:Name="SecondaryFavoriteList" Grid.Column="4" Grid.Row="1" Height="300"
+            <ListBox x:Name="SecondaryFavoriteList" Grid.Column="3" Grid.Row="1" Height="300"
                      MouseDoubleClick="OnLayoutDoubleClick" Visibility="Collapsed">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
@@ -81,12 +76,14 @@
                 </ListBox.ItemTemplate>
             </ListBox>
 
-            <!-- Secondary remove/clear -->
-            <StackPanel x:Name="SecondaryBtns" Grid.Column="5" Grid.Row="1"
-                        VerticalAlignment="Top" Margin="4,50,0,0" Visibility="Collapsed">
-                <Button Content="←" Click="OnRemoveSecondary" Width="28" Height="28"
+            <!-- Secondary buttons: ← ⊘ → -->
+            <StackPanel x:Name="SecondaryBtns" Grid.Column="4" Grid.Row="1"
+                        VerticalAlignment="Top" Margin="4,50,4,0" Visibility="Collapsed">
+                <Button Content="→" Click="OnAddSecondary" Width="30" Height="30"
+                        ToolTip="添加到副屏" Margin="0,0,0,6"/>
+                <Button Content="←" Click="OnRemoveSecondary" Width="30" Height="30"
                         ToolTip="从副屏移除" Margin="0,0,0,6"/>
-                <Button Content="⊘" Click="OnClearSecondary" Width="28" Height="28"
+                <Button Content="⊘" Click="OnClearSecondary" Width="30" Height="30"
                         ToolTip="清空副屏"/>
             </StackPanel>
         </Grid>

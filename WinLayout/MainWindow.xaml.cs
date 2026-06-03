@@ -137,7 +137,6 @@ public partial class MainWindow : Window
         if (secondaryId != null)
         {
             SecondaryHeader.Visibility = Visibility.Visible;
-            AddSecondaryBtn.Visibility = Visibility.Visible;
             SecondaryFavoriteList.Visibility = Visibility.Visible;
             SecondaryBtns.Visibility = Visibility.Visible;
             SecondaryFavoriteList.ItemsSource = layouts
@@ -148,7 +147,6 @@ public partial class MainWindow : Window
         else
         {
             SecondaryHeader.Visibility = Visibility.Collapsed;
-            AddSecondaryBtn.Visibility = Visibility.Collapsed;
             SecondaryFavoriteList.Visibility = Visibility.Collapsed;
             SecondaryBtns.Visibility = Visibility.Collapsed;
         }
