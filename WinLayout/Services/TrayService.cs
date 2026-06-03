@@ -72,7 +72,7 @@ public class TrayService : IDisposable
             uFlags = Shell32.NIF_ICON | Shell32.NIF_MESSAGE | Shell32.NIF_TIP,
             uCallbackMessage = (int)Shell32.WM_TRAYICON,
             hIcon = _trayIconHandle,
-            szTip = "WinLayout"
+            szTip = "窗口魔方"
         };
 
         Shell32.Shell_NotifyIcon(Shell32.NIM_ADD, ref nid);
@@ -179,7 +179,7 @@ public class TrayService : IDisposable
             uID = 1,
             uFlags = Shell32.NIF_ICON | Shell32.NIF_TIP,
             hIcon = iconHandle,
-            szTip = _isPaused ? "WinLayout (已暂停)" : "WinLayout"
+            szTip = _isPaused ? "WinLayout (已暂停)" : "窗口魔方"
         };
         Shell32.Shell_NotifyIcon(Shell32.NIM_MODIFY, ref nid);
         DestroyIcon(iconHandle);
@@ -191,7 +191,7 @@ public class TrayService : IDisposable
             hWnd = hwnd,
             uID = 1,
             uFlags = Shell32.NIF_TIP,
-            szTip = _isPaused ? "WinLayout (已暂停)" : "WinLayout"
+            szTip = _isPaused ? "WinLayout (已暂停)" : "窗口魔方"
         };
         Shell32.Shell_NotifyIcon(Shell32.NIM_MODIFY, ref nidTip);
     }

@@ -6,8 +6,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
-    <Authors>xiang</Authors>
-    <Description>WinLayout — 窗口吸附布局管理器</Description>
+    <Authors>iambest1</Authors>
+    <Description>窗口魔方 — 窗口吸附布局管理器</Description>
     <Version>1.0.0</Version>
     <ApplicationIcon />
   </PropertyGroup>

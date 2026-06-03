@@ -7,7 +7,7 @@ namespace WinLayout;
 public partial class App : Application
 {
     private const string StartupRegistryKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
-    private const string AppName = "WinLayout";
+    private const string AppName = "窗口魔方";
 
     protected override void OnStartup(StartupEventArgs e)
     {
