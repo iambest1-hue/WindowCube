@@ -81,12 +81,24 @@ public partial class MainWindow : Window
         var modifierText = config.ModifierKey == "None" ? "直接拖拽" : config.ModifierKey + "+拖拽";
 
         var primary = _monitorService.GetPrimaryMonitor();
+        var secondary = _monitorService.GetMonitors().FirstOrDefault(m => !m.IsPrimary);
+
         if (primary != null)
         {
             var primaryLayout = _monitorService.GetActiveLayoutForScreen(primary.ScreenId);
-            StatusLabel.Text = primaryLayout != null
-                ? $"主屏: {primaryLayout.Name} — {modifierText}吸附就绪"
-                : $"{modifierText}吸附就绪";
+            var parts = new List<string>();
+            if (primaryLayout != null)
+                parts.Add($"主屏: {primaryLayout.Name}");
+
+            if (secondary != null)
+            {
+                var secondaryLayout = _monitorService.GetActiveLayoutForScreen(secondary.ScreenId);
+                if (secondaryLayout != null)
+                    parts.Add($"副屏: {secondaryLayout.Name}");
+            }
+
+            parts.Add($"{modifierText}吸附就绪");
+            StatusLabel.Text = string.Join(" — ", parts);
         }
         else
         {
