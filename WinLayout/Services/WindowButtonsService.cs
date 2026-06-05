@@ -106,6 +106,18 @@ public class WindowButtonsService : IDisposable
         var monitor = _monitorService.GetMonitorAtCursor(centerX, centerY);
         if (monitor == null) { HideOverlay(); return; }
 
+        // Skip fullscreen windows (no title bar + fills entire monitor)
+        int style = User32.GetWindowLong(fgHwnd, User32.GWL_STYLE);
+        bool hasCaption = (style & User32.WS_CAPTION) != 0;
+        if (!hasCaption &&
+            rect.Left <= monitor.X + 20 && rect.Top <= monitor.Y + 20 &&
+            rect.Right >= monitor.X + monitor.Width - 20 &&
+            rect.Bottom >= monitor.Y + monitor.Height - 20)
+        {
+            HideOverlay();
+            return;
+        }
+
         // Get active layout zone count
         var layout = _monitorService.GetActiveLayoutForScreen(monitor.ScreenId);
         int maxZones = layout?.Zones.Count ?? 2;
