@@ -1,0 +1,69 @@
+<Window x:Class="WinLayout.Views.WindowButtonsOverlay"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Topmost="True"
+        ShowInTaskbar="False"
+        Background="Transparent"
+        ResizeMode="NoResize"
+        Width="135" Height="32"
+        Focusable="False">
+    <Window.Resources>
+        <Style x:Key="NativeBtnStyle" TargetType="Button">
+            <Setter Property="Width" Value="24"/>
+            <Setter Property="Height" Value="24"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="Normal"/>
+            <Setter Property="Foreground" Value="#90FFFFFF"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="0"
+                                CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background"
+                                        Value="#803D3D3D"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background"
+                                        Value="#A03D3D3D"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+    <Canvas x:Name="ButtonCanvas" Background="{x:Null}" Width="135">
+        <Button x:Name="BtnAlt" Content="另" Style="{StaticResource NativeBtnStyle}"
+                Canvas.Left="2" Canvas.Top="4"
+                ToolTip="移动到另一显示器"/>
+        <Button x:Name="Btn1" Content="1" Style="{StaticResource NativeBtnStyle}"
+                Canvas.Left="28" Canvas.Top="4"
+                ToolTip="吸附到区域 1"/>
+        <Button x:Name="Btn2" Content="2" Style="{StaticResource NativeBtnStyle}"
+                Canvas.Left="54" Canvas.Top="4"
+                ToolTip="吸附到区域 2"/>
+        <Button x:Name="Btn3" Content="3" Style="{StaticResource NativeBtnStyle}"
+                Canvas.Left="80" Canvas.Top="4"
+                ToolTip="吸附到区域 3"/>
+        <Button x:Name="Btn4" Content="4" Style="{StaticResource NativeBtnStyle}"
+                Canvas.Left="106" Canvas.Top="4"
+                ToolTip="吸附到区域 4"/>
+    </Canvas>
+</Window>

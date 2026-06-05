@@ -8,6 +8,7 @@ internal static class User32
     public const uint WINEVENT_SKIPOWNPROCESS = 2;
     public const uint WINEVENT_INCONTEXT = 4;
 
+    public const uint EVENT_SYSTEM_FOREGROUND = 0x0003;
     public const uint EVENT_SYSTEM_MOVESIZESTART = 0x000A;
     public const uint EVENT_SYSTEM_MOVESIZEEND = 0x000B;
     public const uint EVENT_OBJECT_LOCATIONCHANGE = 0x800B;
@@ -81,6 +82,9 @@ internal static class User32
 
     [DllImport("user32.dll")]
     public static extern bool SetWindowPlacement(IntPtr hWnd, ref WINDOWPLACEMENT lpwndpl);
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetForegroundWindow();
 
     [DllImport("user32.dll")]
     public static extern bool IsWindow(IntPtr hWnd);

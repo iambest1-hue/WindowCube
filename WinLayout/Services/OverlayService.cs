@@ -150,10 +150,10 @@ public class OverlayService
         if (User32.GetMonitorInfo(hMonitor, ref mi))
         {
             return new ScreenBounds(
-                mi.rcMonitor.Left,
-                mi.rcMonitor.Top,
-                mi.rcMonitor.Right - mi.rcMonitor.Left,
-                mi.rcMonitor.Bottom - mi.rcMonitor.Top);
+                mi.rcWork.Left,
+                mi.rcWork.Top,
+                mi.rcWork.Right - mi.rcWork.Left,
+                mi.rcWork.Bottom - mi.rcWork.Top);
         }
 
         return new ScreenBounds(0, 0, 1920, 1080);

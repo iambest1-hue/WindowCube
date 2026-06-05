@@ -73,7 +73,7 @@ public class VirtualDesktopService : IDisposable
         }
 
         // Fallback: use GetForegroundWindow
-        var fgHwnd = GetForegroundWindow();
+        var fgHwnd = User32.GetForegroundWindow();
         if (fgHwnd != IntPtr.Zero)
         {
             int hr = _desktopManager.GetWindowDesktopId(fgHwnd, out var desktopId);
@@ -83,9 +83,6 @@ public class VirtualDesktopService : IDisposable
 
         return Guid.Empty;
     }
-
-    [DllImport("user32.dll")]
-    private static extern IntPtr GetForegroundWindow();
 
     public void Dispose()
     {

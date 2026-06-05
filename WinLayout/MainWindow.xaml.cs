@@ -22,6 +22,7 @@ public partial class MainWindow : Window
     private HookService? _hookService;
     private TrayService? _trayService;
     private VirtualDesktopService? _virtualDesktopService;
+    private WindowButtonsService? _windowButtonsService;
 
     public MainWindow()
     {
@@ -68,6 +69,10 @@ public partial class MainWindow : Window
         _monitorService.SeedScreenFavoritesIfEmpty();
         UpdateStatus();
         RefreshLayoutLists();
+
+        _windowButtonsService = new WindowButtonsService(
+            _windowManager, _monitorService, _filterService);
+        _windowButtonsService.Start();
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
@@ -255,6 +260,7 @@ public partial class MainWindow : Window
         _trayService?.Dispose();
         _virtualDesktopService?.Dispose();
         _hookService?.Dispose();
+        _windowButtonsService?.Dispose();
         Application.Current.Shutdown();
     }
 
@@ -303,6 +309,7 @@ public partial class MainWindow : Window
         {
             _hookService?.Dispose();
             _overlayService.Hide();
+            _windowButtonsService!.IsPaused = true;
         }
         else
         {
@@ -311,6 +318,7 @@ public partial class MainWindow : Window
             _hookService.DragMoved += OnDragMoved;
             _hookService.DragEnded += OnDragEnded;
             _hookService.Start();
+            _windowButtonsService!.IsPaused = false;
         }
         if (paused)
             StatusLabel.Text = "已暂停 — 拖拽吸附禁用";
