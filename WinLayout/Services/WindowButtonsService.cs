@@ -14,6 +14,7 @@ public class WindowButtonsService : IDisposable
     private readonly WindowManager _windowManager;
     private readonly MonitorService _monitorService;
     private readonly WindowFilterService _filterService;
+    private readonly ConfigService _configService;
     private WindowButtonsOverlay? _overlay;
 
     private IntPtr _lastFgHwnd = IntPtr.Zero;
@@ -28,11 +29,13 @@ public class WindowButtonsService : IDisposable
     public WindowButtonsService(
         WindowManager windowManager,
         MonitorService monitorService,
-        WindowFilterService filterService)
+        WindowFilterService filterService,
+        ConfigService configService)
     {
         _windowManager = windowManager;
         _monitorService = monitorService;
         _filterService = filterService;
+        _configService = configService;
 
         _timer = new DispatcherTimer
         {
@@ -83,6 +86,9 @@ public class WindowButtonsService : IDisposable
     {
         if (_isPaused) return;
 
+        var config = _configService.LoadConfig();
+        if (!config.ShowWindowButtons) { HideOverlay(); return; }
+
         var fgHwnd = User32.GetForegroundWindow();
         if (fgHwnd == IntPtr.Zero) { HideOverlay(); return; }
 
@@ -121,7 +127,7 @@ public class WindowButtonsService : IDisposable
         // Get active layout zone count
         var layout = _monitorService.GetActiveLayoutForScreen(monitor.ScreenId);
         int maxZones = layout?.Zones.Count ?? 2;
-        maxZones = Math.Min(maxZones, 4);
+        maxZones = Math.Min(maxZones, config.MaxZoneButtonCount);
 
         bool hasMultiMonitor = _monitorService.GetMonitors().Count > 1;
 

@@ -84,6 +84,21 @@
                           Margin="0,12,0,0"/>
             </StackPanel>
         </TabItem>
+
+        <TabItem Header="窗口按钮">
+            <StackPanel Margin="15" Width="400">
+                <CheckBox x:Name="ShowWindowButtonsCheck" Content="在活动窗口标题栏显示快捷按钮"
+                          Margin="0,8,0,0"/>
+
+                <TextBlock Text="最多显示数字按钮" FontWeight="Bold" Margin="0,16,0,2"/>
+                <StackPanel Orientation="Horizontal">
+                    <Slider x:Name="MaxZoneButtonSlider" Minimum="1" Maximum="4"
+                            Width="200" Value="3" TickFrequency="1" IsSnapToTickEnabled="True"/>
+                    <TextBlock x:Name="MaxZoneButtonLabel" Width="20" TextAlignment="Center"
+                               VerticalAlignment="Center" Margin="10,0,0,0"/>
+                </StackPanel>
+            </StackPanel>
+        </TabItem>
     </TabControl>
     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
                 Margin="10" Grid.Row="1">

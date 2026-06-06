@@ -31,6 +31,12 @@ public class UserConfig
     [JsonPropertyName("AutoApplyOnDesktopSwitch")]
     public bool AutoApplyOnDesktopSwitch { get; set; }
 
+    [JsonPropertyName("ShowWindowButtons")]
+    public bool ShowWindowButtons { get; set; } = true;
+
+    [JsonPropertyName("MaxZoneButtonCount")]
+    public int MaxZoneButtonCount { get; set; } = 3;
+
     [JsonPropertyName("BlacklistedProcesses")]
     public List<string> BlacklistedProcesses { get; set; } = new();
 

@@ -71,7 +71,7 @@ public partial class MainWindow : Window
         RefreshLayoutLists();
 
         _windowButtonsService = new WindowButtonsService(
-            _windowManager, _monitorService, _filterService);
+            _windowManager, _monitorService, _filterService, _configService);
         _windowButtonsService.Start();
     }
 
@@ -287,6 +287,12 @@ public partial class MainWindow : Window
         settings.SettingsSaved += () =>
         {
             ReloadHookService();
+            _windowButtonsService?.Dispose();
+            _windowButtonsService = new WindowButtonsService(
+                _windowManager, _monitorService, _filterService, _configService);
+            if (_trayService?.IsPaused == true)
+                _windowButtonsService.IsPaused = true;
+            _windowButtonsService.Start();
             UpdateStatus();
         };
         settings.ShowDialog();

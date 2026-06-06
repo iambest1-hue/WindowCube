@@ -71,6 +71,15 @@ public partial class SettingsWindow : Window
 
         PerDesktopLayoutCheck.IsChecked = _config.PerDesktopLayout;
         AutoApplyOnSwitchCheck.IsChecked = _config.AutoApplyOnDesktopSwitch;
+
+        ShowWindowButtonsCheck.IsChecked = _config.ShowWindowButtons;
+        MaxZoneButtonSlider.Value = _config.MaxZoneButtonCount;
+        MaxZoneButtonLabel.Text = _config.MaxZoneButtonCount.ToString();
+        MaxZoneButtonSlider.ValueChanged += (_, _) =>
+        {
+            _config.MaxZoneButtonCount = (int)MaxZoneButtonSlider.Value;
+            MaxZoneButtonLabel.Text = _config.MaxZoneButtonCount.ToString();
+        };
     }
 
     private void CollectChanges()
@@ -88,6 +97,7 @@ public partial class SettingsWindow : Window
         _config.RunAtStartup = RunAtStartupCheck.IsChecked == true;
         _config.PerDesktopLayout = PerDesktopLayoutCheck.IsChecked == true;
         _config.AutoApplyOnDesktopSwitch = AutoApplyOnSwitchCheck.IsChecked == true;
+        _config.ShowWindowButtons = ShowWindowButtonsCheck.IsChecked == true;
     }
 
     private void OnSaveClose(object sender, RoutedEventArgs e)
