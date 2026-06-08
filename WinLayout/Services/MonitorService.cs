@@ -82,7 +82,10 @@ public class MonitorService
         if (config.ScreenLayouts.TryGetValue(screenId, out var screenCfg))
         {
             var layouts = _layoutService.GetAllLayouts();
-            return layouts.FirstOrDefault(l => l.LayoutId == screenCfg.ActiveLayoutId);
+            var matched = layouts.FirstOrDefault(l => l.LayoutId == screenCfg.ActiveLayoutId);
+            if (matched != null)
+                return matched;
+            // ActiveLayoutId is stale or empty, fall through to default
         }
         // Fallback to default active
         return _layoutService.GetActiveLayout();

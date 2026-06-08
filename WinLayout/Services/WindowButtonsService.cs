@@ -15,6 +15,7 @@ public class WindowButtonsService : IDisposable
     private readonly MonitorService _monitorService;
     private readonly WindowFilterService _filterService;
     private readonly ConfigService _configService;
+    private readonly LayoutService _layoutService;
     private WindowButtonsOverlay? _overlay;
 
     private IntPtr _lastFgHwnd = IntPtr.Zero;
@@ -30,12 +31,14 @@ public class WindowButtonsService : IDisposable
         WindowManager windowManager,
         MonitorService monitorService,
         WindowFilterService filterService,
-        ConfigService configService)
+        ConfigService configService,
+        LayoutService layoutService)
     {
         _windowManager = windowManager;
         _monitorService = monitorService;
         _filterService = filterService;
         _configService = configService;
+        _layoutService = layoutService;
 
         _timer = new DispatcherTimer
         {
@@ -112,20 +115,18 @@ public class WindowButtonsService : IDisposable
         var monitor = _monitorService.GetMonitorAtCursor(centerX, centerY);
         if (monitor == null) { HideOverlay(); return; }
 
-        // Skip fullscreen windows (no title bar + fills entire monitor)
+        // Skip windows without a standard title bar (no min/max/close buttons)
         int style = User32.GetWindowLong(fgHwnd, User32.GWL_STYLE);
         bool hasCaption = (style & User32.WS_CAPTION) != 0;
-        if (!hasCaption &&
-            rect.Left <= monitor.X + 20 && rect.Top <= monitor.Y + 20 &&
-            rect.Right >= monitor.X + monitor.Width - 20 &&
-            rect.Bottom >= monitor.Y + monitor.Height - 20)
+        bool hasSysMenu = (style & User32.WS_SYSMENU) != 0;
+        if (!hasCaption || !hasSysMenu)
         {
             HideOverlay();
             return;
         }
 
-        // Get active layout zone count
-        var layout = _monitorService.GetActiveLayoutForScreen(monitor.ScreenId);
+        // Get active layout zone count (use global default, not per-screen)
+        var layout = _layoutService.GetActiveLayout();
         int maxZones = layout?.Zones.Count ?? 2;
         maxZones = Math.Min(maxZones, config.MaxZoneButtonCount);
 

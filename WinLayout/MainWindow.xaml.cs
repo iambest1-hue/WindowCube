@@ -71,7 +71,7 @@ public partial class MainWindow : Window
         RefreshLayoutLists();
 
         _windowButtonsService = new WindowButtonsService(
-            _windowManager, _monitorService, _filterService, _configService);
+            _windowManager, _monitorService, _filterService, _configService, _layoutService);
         _windowButtonsService.Start();
     }
 
@@ -289,7 +289,7 @@ public partial class MainWindow : Window
             ReloadHookService();
             _windowButtonsService?.Dispose();
             _windowButtonsService = new WindowButtonsService(
-                _windowManager, _monitorService, _filterService, _configService);
+                _windowManager, _monitorService, _filterService, _configService, _layoutService);
             if (_trayService?.IsPaused == true)
                 _windowButtonsService.IsPaused = true;
             _windowButtonsService.Start();
