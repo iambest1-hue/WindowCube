@@ -53,6 +53,17 @@ public partial class MainWindow : Window
         var handle = new WindowInteropHelper(this).Handle;
         _monitorService.Initialize(handle);
 
+        // Set window icon from the embedded application icon
+        try
+        {
+            var exePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
+            using var icon = System.Drawing.Icon.ExtractAssociatedIcon(exePath);
+            if (icon != null)
+                this.Icon = Imaging.CreateBitmapSourceFromHIcon(
+                    icon.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+        }
+        catch { }
+
         _trayService = new TrayService(this, _layoutService, _monitorService, _configService);
         _trayService.OpenEditorRequested += (_, _) => OnOpenEditor(this, new RoutedEventArgs());
         _trayService.OpenSettingsRequested += (_, _) => OpenSettings();
