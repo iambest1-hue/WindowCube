@@ -125,6 +125,16 @@ public class WindowButtonsService : IDisposable
             return;
         }
 
+        // Apply user-defined app blacklist for window buttons
+        var procName = WindowFilterService.GetProcessName(fgHwnd);
+        if (!string.IsNullOrEmpty(procName) &&
+            config.WindowButtonsBlacklist.Any(
+                p => string.Equals(p, procName, StringComparison.OrdinalIgnoreCase)))
+        {
+            HideOverlay();
+            return;
+        }
+
         // Get active layout zone count (use global default, not per-screen)
         var layout = _layoutService.GetActiveLayout();
         int maxZones = layout?.Zones.Count ?? 2;

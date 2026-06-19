@@ -40,6 +40,10 @@ public class UserConfig
     [JsonPropertyName("BlacklistedProcesses")]
     public List<string> BlacklistedProcesses { get; set; } = new();
 
+    /// <summary>控制窗口快捷按钮显示，不影响拖拽吸附黑名单</summary>
+    [JsonPropertyName("WindowButtonsBlacklist")]
+    public List<string> WindowButtonsBlacklist { get; set; } = new();
+
     [JsonPropertyName("ScreenLayouts")]
     public Dictionary<string, ScreenLayoutConfig> ScreenLayouts { get; set; } = new();
 

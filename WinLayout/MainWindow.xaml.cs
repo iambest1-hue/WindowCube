@@ -1,11 +1,15 @@
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using WinLayout.Models;
+using WinLayout.Native;
 using WinLayout.Services;
 using WinLayout.Views;
 
@@ -19,6 +23,7 @@ public partial class MainWindow : Window
     private readonly OverlayService _overlayService;
     private readonly WindowManager _windowManager = new();
     private readonly WindowFilterService _filterService;
+    private readonly Dictionary<string, ImageSource?> _iconCache = new(StringComparer.OrdinalIgnoreCase);
     private HookService? _hookService;
     private TrayService? _trayService;
     private VirtualDesktopService? _virtualDesktopService;
@@ -69,6 +74,8 @@ public partial class MainWindow : Window
         _monitorService.SeedScreenFavoritesIfEmpty();
         UpdateStatus();
         RefreshLayoutLists();
+        RefreshRunningAppsList();
+        RefreshButtonBlacklistList();
 
         _windowButtonsService = new WindowButtonsService(
             _windowManager, _monitorService, _filterService, _configService, _layoutService);
@@ -115,6 +122,7 @@ public partial class MainWindow : Window
     }
 
     private record LayoutListItem(string DisplayName, LayoutDefinition Layout);
+    private record RunningAppItem(string DisplayName, string ProcessName, ImageSource? Icon = null);
 
     private void RefreshLayoutLists()
     {
@@ -167,6 +175,119 @@ public partial class MainWindow : Window
             SecondaryFavoriteList.Visibility = Visibility.Collapsed;
             SecondaryBtns.Visibility = Visibility.Collapsed;
         }
+    }
+
+    private void RefreshRunningAppsList()
+    {
+        var config = _configService.LoadConfig();
+        var apps = new List<(string procName, string title)>();
+        var seenProcs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var systemClasses = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "Progman", "Shell_TrayWnd", "WorkerW"
+        };
+
+        User32.EnumWindows((hwnd, _) =>
+        {
+            try
+            {
+                if (!User32.IsWindowVisible(hwnd)) return true;
+
+                var cls = GetWindowClassName(hwnd);
+                if (systemClasses.Contains(cls)) return true;
+
+                var sb = new System.Text.StringBuilder(256);
+                User32.InternalGetWindowText(hwnd, sb, sb.Capacity);
+                if (sb.Length == 0) return true;
+
+                User32.GetWindowThreadProcessId(hwnd, out uint pid);
+                if (pid == Environment.ProcessId) return true;
+
+                string procName;
+                try { procName = Process.GetProcessById((int)pid).ProcessName; }
+                catch { return true; }
+
+                if (seenProcs.Contains(procName)) return true;
+                seenProcs.Add(procName);
+
+                apps.Add((procName, sb.ToString()));
+            }
+            catch { }
+            return true;
+        }, IntPtr.Zero);
+
+        // Fallback: if EnumWindows found very few apps, try Process enumeration
+        if (apps.Count < 5)
+        {
+            foreach (var p in Process.GetProcesses())
+            {
+                try
+                {
+                    if (string.IsNullOrEmpty(p.MainWindowTitle)) continue;
+                    if (p.Id == Environment.ProcessId) continue;
+                    if (seenProcs.Contains(p.ProcessName)) continue;
+                    seenProcs.Add(p.ProcessName);
+                    apps.Add((p.ProcessName, p.MainWindowTitle));
+                }
+                catch { }
+            }
+        }
+
+        RunningAppsList.ItemsSource = apps
+            .Where(a => !config.WindowButtonsBlacklist.Any(
+                p => string.Equals(p, a.procName, StringComparison.OrdinalIgnoreCase)))
+            .OrderBy(a => a.procName)
+            .Select(a => new RunningAppItem(
+                $"{a.procName} — {a.title}",
+                a.procName,
+                GetProcessIcon(a.procName)))
+            .ToList();
+    }
+
+    private static string GetWindowClassName(IntPtr hwnd)
+    {
+        var sb = new System.Text.StringBuilder(256);
+        User32.GetClassName(hwnd, sb, sb.Capacity);
+        return sb.ToString();
+    }
+
+    private void RefreshButtonBlacklistList()
+    {
+        var config = _configService.LoadConfig();
+        ButtonBlacklistList.ItemsSource = config.WindowButtonsBlacklist
+            .Select(p => new RunningAppItem(p, p, GetProcessIcon(p)))
+            .ToList();
+    }
+
+    private ImageSource? GetProcessIcon(string procName)
+    {
+        if (_iconCache.TryGetValue(procName, out var cached)) return cached;
+
+        try
+        {
+            var procs = Process.GetProcessesByName(procName);
+            if (procs.Length == 0) { _iconCache[procName] = null; return null; }
+            string? path = null;
+            try { path = procs[0].MainModule?.FileName; } catch { }
+            if (path == null) { _iconCache[procName] = null; return null; }
+
+            var shfi = new User32.SHFILEINFO();
+            IntPtr result = User32.SHGetFileInfo(path, 0, ref shfi,
+                (uint)Marshal.SizeOf<User32.SHFILEINFO>(),
+                User32.SHGFI_ICON | User32.SHGFI_SMALLICON);
+            if (result == IntPtr.Zero || shfi.hIcon == IntPtr.Zero)
+            {
+                _iconCache[procName] = null;
+                return null;
+            }
+
+            var icon = Imaging.CreateBitmapSourceFromHIcon(
+                shfi.hIcon, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+            User32.DestroyIcon(shfi.hIcon);
+            _iconCache[procName] = icon;
+            return icon;
+        }
+        catch { _iconCache[procName] = null; return null; }
     }
 
     private string PrimaryId => _monitorService.GetPrimaryMonitor()?.ScreenId ?? "default";
@@ -234,6 +355,52 @@ public partial class MainWindow : Window
         string screenId = sender == SecondaryFavoriteList ? (SecondaryId ?? PrimaryId) : PrimaryId;
         _monitorService.SetActiveLayoutForScreen(screenId, item.Layout.LayoutId);
         OnLayoutSwitched(item.Layout.LayoutId);
+    }
+
+    private void OnAddToButtonBlacklist(object sender, RoutedEventArgs e)
+    {
+        if (RunningAppsList.SelectedItem is not RunningAppItem item) return;
+        if (string.IsNullOrEmpty(item.ProcessName)) return;
+
+        var config = _configService.LoadConfig();
+        if (config.WindowButtonsBlacklist.Any(
+            p => string.Equals(p, item.ProcessName, StringComparison.OrdinalIgnoreCase)))
+            return;
+
+        config.WindowButtonsBlacklist.Add(item.ProcessName);
+        _configService.SaveConfig(config);
+        RefreshRunningAppsList();
+        RefreshButtonBlacklistList();
+    }
+
+    private void OnRemoveFromButtonBlacklist(object sender, RoutedEventArgs e)
+    {
+        if (ButtonBlacklistList.SelectedItem is not RunningAppItem item) return;
+
+        var config = _configService.LoadConfig();
+        config.WindowButtonsBlacklist.RemoveAll(
+            p => string.Equals(p, item.ProcessName, StringComparison.OrdinalIgnoreCase));
+        _configService.SaveConfig(config);
+        RefreshRunningAppsList();
+        RefreshButtonBlacklistList();
+    }
+
+    private void OnClearButtonBlacklist(object sender, RoutedEventArgs e)
+    {
+        var config = _configService.LoadConfig();
+        config.WindowButtonsBlacklist.Clear();
+        _configService.SaveConfig(config);
+        RefreshRunningAppsList();
+        RefreshButtonBlacklistList();
+    }
+
+    private void OnMainTabChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (MainTabControl.SelectedIndex == 1)
+        {
+            RefreshRunningAppsList();
+            RefreshButtonBlacklistList();
+        }
     }
 
     private void OnShowMenu(object sender, RoutedEventArgs e)

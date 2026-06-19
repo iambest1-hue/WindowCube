@@ -54,7 +54,7 @@ public class WindowFilterService
         return sb.ToString();
     }
 
-    private static string GetProcessName(IntPtr hwnd)
+    public static string GetProcessName(IntPtr hwnd)
     {
         try
         {
