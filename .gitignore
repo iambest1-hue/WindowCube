@@ -15,6 +15,7 @@ obj/
 
 # Build output
 发布包/
+publish/
 *.zip
 
 # Project docs (duplicated in publish output)
