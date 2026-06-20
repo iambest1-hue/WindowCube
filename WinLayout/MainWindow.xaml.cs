@@ -53,14 +53,17 @@ public partial class MainWindow : Window
         var handle = new WindowInteropHelper(this).Handle;
         _monitorService.Initialize(handle);
 
-        // Set window icon from the embedded application icon
+        // Set window icon from the application executable
         try
         {
-            var exePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
-            using var icon = System.Drawing.Icon.ExtractAssociatedIcon(exePath);
-            if (icon != null)
-                this.Icon = Imaging.CreateBitmapSourceFromHIcon(
-                    icon.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+            var exePath = Environment.ProcessPath;
+            if (exePath != null)
+            {
+                using var icon = System.Drawing.Icon.ExtractAssociatedIcon(exePath);
+                if (icon != null)
+                    this.Icon = Imaging.CreateBitmapSourceFromHIcon(
+                        icon.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+            }
         }
         catch { }
 
@@ -73,6 +76,7 @@ public partial class MainWindow : Window
         _trayService.ExportRequested += (_, _) => OnExportLayouts();
         _trayService.ImportRequested += (_, _) => OnImportLayouts();
         _trayService.ExitRequested += (_, _) => ShutdownApp();
+        _trayService.DonateRequested += (_, _) => new DonateWindow(this).ShowDialog();
 
         _virtualDesktopService = new VirtualDesktopService(_configService, _layoutService);
         _virtualDesktopService.DesktopChanged += (_, _) =>
@@ -394,6 +398,12 @@ public partial class MainWindow : Window
         _configService.SaveConfig(config);
         RefreshRunningAppsList();
         RefreshButtonBlacklistList();
+    }
+
+    private void OnRefreshRunningApps(object sender, RoutedEventArgs e)
+    {
+        _iconCache.Clear();
+        RefreshRunningAppsList();
     }
 
     private void OnClearButtonBlacklist(object sender, RoutedEventArgs e)

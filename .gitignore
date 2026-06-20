@@ -10,6 +10,16 @@ obj/
 # VS Code
 .vscode/
 
+# Claude Code
+.claude/
+
+# Build output
+发布包/
+*.zip
+
+# Project docs (duplicated in publish output)
+功能说明.md
+
 # OS
 Thumbs.db
 Desktop.ini

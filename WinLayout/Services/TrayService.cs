@@ -33,6 +33,7 @@ public class TrayService : IDisposable
     public event EventHandler? ExportRequested;
     public event EventHandler? ImportRequested;
     public event EventHandler? ExitRequested;
+    public event EventHandler? DonateRequested;
 
     public bool IsPaused => _isPaused;
 
@@ -154,6 +155,8 @@ public class TrayService : IDisposable
             LocalizationService.SetCulture(next);
             RefreshLayoutMenuItems();
         }));
+        _trayMenu.Items.Add(new Separator());
+        _trayMenu.Items.Add(CreateMenuItem("请作者喝杯咖啡 ☕", () => DonateRequested?.Invoke(this, EventArgs.Empty)));
         _trayMenu.Items.Add(new Separator());
         _trayMenu.Items.Add(CreateMenuItem("退出", () =>
         {

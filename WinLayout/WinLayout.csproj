@@ -16,4 +16,9 @@
     <PackageReference Include="System.Drawing.Common" Version="8.0.*" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Resource Include="Resources\wechat_qr.png" />
+    <Resource Include="Resources\alipay_qr.png" />
+  </ItemGroup>
+
 </Project>
